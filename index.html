@@ -1,0 +1,2755 @@
+﻿<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PKW prevádzky - prehľad a plán</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d7dde5;
+      --blue: #006bb6;
+      --green: #14804a;
+      --amber: #b76e00;
+      --red: #b42318;
+      --soft-blue: #e8f2fb;
+      --soft-green: #e8f5ee;
+      --soft-amber: #fff4df;
+      --soft-red: #fdeceb;
+      --shadow: 0 16px 36px rgba(23, 32, 42, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(244, 246, 248, .95);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 14px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-tools {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+
+    .quick-filter {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .quick-filter select {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      padding: 7px 11px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .nav button,
+    .action {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 7px 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .nav button.active,
+    .action.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    main {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 18px 22px 28px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+    .panel,
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .kpi {
+      min-height: 124px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .value {
+      margin-top: 8px;
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subvalue {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      width: fit-content;
+    }
+
+    .ok { color: var(--green); background: var(--soft-green); }
+    .watch { color: var(--amber); background: var(--soft-amber); }
+    .risk { color: var(--red); background: var(--soft-red); }
+    .info { color: var(--blue); background: var(--soft-blue); }
+
+    .bar {
+      width: 100%;
+      height: 16px;
+      border-radius: 999px;
+      background: #edf1f5;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--blue);
+      width: 0;
+    }
+
+    .fill.green { background: var(--green); }
+    .fill.amber { background: var(--amber); }
+    .fill.red { background: var(--red); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 8px 7px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    th:first-child,
+    td:first-child,
+    th:nth-child(2),
+    td:nth-child(2) {
+      text-align: left;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--muted);
+      background: #f8fafc;
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      max-height: 650px;
+    }
+
+    .operation {
+      display: grid;
+      gap: 12px;
+    }
+
+    .operation-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .operation-head strong {
+      font-size: 22px;
+    }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: 170px 1fr 78px;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 8px 9px;
+      background: #fff;
+    }
+
+    .number {
+      width: 76px;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 6px;
+      text-align: right;
+      background: #fff;
+    }
+
+    .chart {
+      min-height: 270px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .gridline { stroke: #e5e9ef; stroke-width: 1; }
+    .axis { stroke: #98a2b3; stroke-width: 1; }
+    .chart-text { fill: #344054; font-size: 12px; }
+    .chart-small { fill: #667085; font-size: 11px; }
+    .chart-value { fill: #17202a; font-size: 12px; font-weight: 700; }
+    .daily-value { fill: #101828; font-size: 13px; font-weight: 800; }
+    .daily-label-bg { fill: #fff; stroke: #d0d5dd; stroke-width: 1; }
+
+    .note-list {
+      display: grid;
+      gap: 9px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .note-list li {
+      border-left: 4px solid var(--blue);
+      background: #f8fafc;
+      padding: 9px 11px;
+      border-radius: 6px;
+      color: #344054;
+    }
+
+    .row-diagnostic td {
+      background: var(--soft-red);
+    }
+
+    .row-diagnostic td:first-child,
+    .diag-label {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .row-support td {
+      background: #f8fafc;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary > div,
+    .upload-zone {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .summary strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .summary span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .upload-zone {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .upload-zone input[type="file"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px;
+      background: #fff;
+    }
+
+    .print-report {
+      display: none;
+      background: #fff;
+      color: #17202a;
+    }
+
+    .print-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      border-bottom: 2px solid #17202a;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+
+    .print-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .print-meta {
+      color: #475467;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .print-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .print-kpi {
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      padding: 9px;
+      min-height: 72px;
+    }
+
+    .print-kpi span {
+      display: block;
+      color: #667085;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .print-kpi strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 20px;
+      line-height: 1.05;
+    }
+
+    .print-block {
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 10px;
+      break-inside: avoid;
+    }
+
+    .print-block h2 {
+      font-size: 15px;
+      margin: 0 0 8px;
+    }
+
+    .print-plan-bars {
+      display: grid;
+      gap: 9px;
+      margin-top: 4px;
+    }
+
+    .print-plan-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 92px;
+      gap: 10px;
+      align-items: center;
+      font-size: 11px;
+      break-inside: avoid;
+    }
+
+    .print-plan-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .print-plan-track {
+      height: 14px;
+      border-radius: 999px;
+      background: #e8edf2;
+      overflow: hidden;
+    }
+
+    .print-plan-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #0072bc;
+      min-width: 1px;
+    }
+
+    .print-plan-value {
+      text-align: right;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .print-plan-value small {
+      display: block;
+      color: #17202a;
+      font-weight: 700;
+    }
+
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .print-table th,
+    .print-table td {
+      border-bottom: 1px solid #d0d5dd;
+      padding: 5px 6px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .print-table th:first-child,
+    .print-table td:first-child,
+    .print-table th:nth-child(2),
+    .print-table td:nth-child(2) {
+      text-align: left;
+    }
+
+    @media (max-width: 980px) {
+      .topbar,
+      .cols-2,
+      .cols-3,
+      .cols-4,
+      .cols-6,
+      .settings {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .header-tools {
+        justify-items: start;
+      }
+    }
+
+    @media print {
+      header,
+      .toolbar,
+      .settings { display: none; }
+      body { background: #fff; }
+      main { max-width: none; padding: 0; }
+      .screen { display: block; page-break-after: always; }
+      .panel,
+      .kpi { box-shadow: none; break-inside: avoid; }
+      th { position: static; }
+
+      body.print-sp-report main > .screen,
+      body.print-sp-report header {
+        display: none !important;
+      }
+
+      body.print-sp-report main {
+        max-width: none;
+        padding: 0;
+      }
+
+      body.print-sp-report #spPrintReport {
+        display: block !important;
+      }
+
+      body.print-sp-report .print-report {
+        display: block;
+      }
+
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>PKW prevádzky - T5P / MG</h1>
+        <div class="meta" id="meta">Júl 2026, stav k 21.7.2026, aktualizované 21.07.2026 20:29</div>
+      </div>
+      <div class="header-tools">
+        <div class="quick-filter">
+          <button class="action primary" id="refreshFromExcelBtn" type="button">Aktualizovať</button>
+          <label for="operationFilterTop">Prevádzka</label>
+          <select id="operationFilterTop">
+            <option value="ALL">Všetky</option>
+            <option value="T5P">T5P</option>
+            <option value="MG">MG</option>
+          </select>
+        </div>
+        <nav class="nav" aria-label="Obrazovky">
+          <button class="active" data-screen="overview">Prehľad</button>
+          <button data-screen="people">Tím</button>
+          <button data-screen="days">Denný report</button>
+          <button data-screen="advisors">Servisní poradcovia</button>
+          <button data-screen="update">Aktualizácia</button>
+          <button data-screen="settings">Nastavenia</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="screen active" id="overview">
+      <div class="grid cols-6">
+        <div class="kpi">
+          <div>
+            <div class="label">Mesačný plán</div>
+            <div class="value" id="kpiPlan">0 h</div>
+            <div class="subvalue" id="kpiPlanSub">podľa výberu</div>
+          </div>
+          <span class="status info">plán</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Fakturované spolu</div>
+            <div class="value" id="kpiActual">0 h</div>
+            <div class="subvalue">všetky PKW prevádzky</div>
+          </div>
+          <span class="status info">spolu</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Chýba do plánu</div>
+            <div class="value" id="kpiMissing">0 h</div>
+            <div class="subvalue">do konca mesiaca</div>
+          </div>
+          <span class="status watch">dorovnať</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Potrebné denne</div>
+            <div class="value" id="kpiNeedDay">0 h</div>
+            <div class="subvalue" id="kpiNeedDaySub">na zostávajúci deň</div>
+          </div>
+          <span class="status risk" id="kpiNeedStatus">tempo</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Produktivita spolu</div>
+            <div class="value" id="kpiProductivity">0 %</div>
+            <div class="subvalue" id="kpiProductivitySub">z nastavenej kapacity</div>
+          </div>
+          <span class="status watch" id="kpiProductivityStatus">sledovať</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Efektivita spolu</div>
+            <div class="value" id="kpiEfficiency">0 %</div>
+            <div class="subvalue" id="kpiEfficiencySub">voči plánu k dátumu</div>
+          </div>
+          <span class="status watch" id="kpiEfficiencyStatus">tempo</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Zostáva pracovných dní</div>
+            <div class="value" id="kpiRemaining">5</div>
+            <div class="subvalue">do konca mesiaca</div>
+          </div>
+          <span class="status info">tempo</span>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Kapacita a neprítomnosti</h2>
+        <div class="summary" id="absenceCapacitySummary"></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Nahratie dát mechanikov a diagnostikov</h2>
+        <div class="upload-zone">
+          <div class="subvalue">Nahraj hlavný Excel PKW prevádzky s dennými hodinami. Asistent načíta mechanikov, diagnostikov, prevádzku, dni a fakturované hodiny.</div>
+          <input id="peopleUploadFile" type="file" accept=".xlsx,.xlsm">
+          <div class="toolbar" style="justify-content:flex-start; margin-top:0">
+            <button class="action primary" id="peopleUploadBtn" type="button">Nahrať dáta dielne</button>
+            <button class="action" id="peopleResetBtn" type="button">Obnoviť pôvodné dáta dielne</button>
+          </div>
+          <div class="subvalue" id="peopleUploadStatus">Dáta sa uložia iba v tomto asistentovi.</div>
+        </div>
+      </div>
+
+      <div class="grid cols-3" style="margin-top:14px" id="operationCards"></div>
+
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Porovnanie s predchádzajúcim mesiacom</h2>
+        <div id="monthCompare"></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Odhad do konca mesiaca</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Prevádzka</th>
+                <th>Aktuálne</th>
+                <th>Priemer/deň</th>
+                <th>Odhad koniec mesiaca</th>
+                <th>Plán</th>
+                <th>Rozdiel</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody id="forecastRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="panel">
+          <h2>Porovnanie prevádzok</h2>
+          <div class="chart" id="operationChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Stav podľa skupín</h2>
+          <div id="groupStatus"></div>
+        </div>
+        <div class="panel">
+          <h2>Riadiace poznámky</h2>
+          <ul class="note-list" id="notes"></ul>
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="panel">
+          <h2>Najvyššie plnenie</h2>
+          <div id="topFulfillment"></div>
+        </div>
+        <div class="panel">
+          <h2>Najväčšia potreba dorovnať plán</h2>
+          <div id="biggestNeed"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="people">
+      <div class="panel" style="margin-bottom:14px">
+        <h2>Výkon jednotlivcov voči predchádzajúcemu mesiacu</h2>
+        <div id="personMonthCompare"></div>
+      </div>
+      <div class="panel">
+        <h2>Ľudia podľa prevádzky</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Meno</th>
+                <th>Prevádzka</th>
+                <th>Typ</th>
+                <th>Neprítomnosť</th>
+                <th>Fakturované</th>
+                <th>Predch. mesiac</th>
+                <th>Rozdiel</th>
+                <th>Produktivita</th>
+                <th>Plnenie plánu</th>
+                <th>Plán</th>
+                <th>Chýba</th>
+                <th>Potrebné/deň</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody id="peopleRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="days">
+      <div class="grid cols-2">
+        <div class="panel">
+          <h2>Fakturované hodiny po dňoch</h2>
+          <div class="chart" id="dailyChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Čiara mesačného cieľa</h2>
+          <div class="chart" id="progressChart"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2>Najlepší pracovníci</h2>
+        <div id="topPeople"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="toolbar" style="justify-content:space-between; margin-top:0">
+          <h2 style="margin:0">Denný výkon jednotlivcov</h2>
+          <div class="field" style="min-width:160px">
+            <label for="dayDetailSelect">Deň</label>
+            <select id="dayDetailSelect"></select>
+          </div>
+        </div>
+        <div id="dailyPeople"></div>
+      </div>
+    </section>
+
+    <section class="screen" id="advisors">
+      <div class="grid cols-6">
+        <div class="kpi">
+          <div>
+            <div class="label">Prevádzka</div>
+            <div class="value" id="spOperation">T5P / MG</div>
+            <div class="subvalue">podľa filtra hore</div>
+          </div>
+          <span class="status info">SP</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Mesačný plán hodín dielne</div>
+            <div class="value" id="spMonthlyPlan">0 h</div>
+            <div class="subvalue">cieľ prevádzky</div>
+          </div>
+          <span class="status info">plán</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Fakturované SP</div>
+            <div class="value" id="spAdvisorHours">0 h</div>
+            <div class="subvalue" id="spAdvisorAmount">0 EUR</div>
+          </div>
+          <span class="status ok">výkon</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Chýba do plánu</div>
+            <div class="value" id="spMissing">0 h</div>
+            <div class="subvalue">voči mesačnému cieľu</div>
+          </div>
+          <span class="status watch" id="spMissingStatus">tempo</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Potrebné fakturovať denne</div>
+            <div class="value" id="spNeedDay">0 h</div>
+            <div class="subvalue" id="spNeedDaySub">na zostávajúce dni</div>
+          </div>
+          <span class="status risk">denne</span>
+        </div>
+        <div class="kpi">
+          <div>
+            <div class="label">Odhad do konca mesiaca</div>
+            <div class="value" id="spForecast">0 h</div>
+            <div class="subvalue" id="spForecastSub">podľa aktuálneho tempa</div>
+          </div>
+          <span class="status watch" id="spForecastStatus">odhad</span>
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="panel">
+          <h2>Plnenie plánu SP</h2>
+          <div id="spTopAdvisors"></div>
+        </div>
+        <div class="panel">
+          <h2>Nahratie dát SP</h2>
+          <div class="upload-zone">
+            <div class="subvalue">Nahraj Excel alebo CSV s hlavičkami: Meno SP, Súčet z Práca (Hodiny), Súčet z Práca (čiastka). Fotku vie asistent prijať ako náhľad, automatické čítanie fotky závisí od OCR v počítači.</div>
+            <input id="spUploadFile" type="file" accept=".xlsx,.xlsm,.csv,.txt,image/*">
+            <div class="toolbar" style="justify-content:flex-start; margin-top:0">
+              <button class="action primary" id="spUploadBtn" type="button">Nahrať dáta SP</button>
+              <button class="action" id="spClearBtn" type="button">Vymazať SP dáta</button>
+              <button class="action" id="spPrintReportBtn" type="button">Tlačová zostava SP</button>
+            </div>
+            <div class="subvalue" id="spUploadStatus">Dáta sa uložia iba v tomto asistentovi.</div>
+            <img id="spImagePreview" alt="" style="display:none; max-width:100%; border-radius:8px; border:1px solid var(--line)">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <div class="toolbar" style="justify-content:space-between; margin-top:0">
+          <h2 style="margin:0">Ranná tlačová zostava pre SP</h2>
+          <button class="action primary" id="spPrintReportBtnBottom" type="button">Tlačiť / uložiť PDF</button>
+        </div>
+        <div class="subvalue">Zostava je pripravená na denné ranné odoslanie za obdobie od začiatku mesiaca po dátum poslednej aktualizácie, teda štandardne do predchádzajúceho dňa.</div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:14px">
+        <div class="panel">
+          <h2>Fakturované hodiny SP po dňoch</h2>
+          <div class="chart" id="spDailyChart"></div>
+        </div>
+        <div class="panel">
+          <h2>Čiara mesačného cieľa SP</h2>
+          <div class="chart" id="spProgressChart"></div>
+        </div>
+      </div>
+
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Percentuálny podiel zákaziek podľa kódu typu úlohy</h2>
+        <div class="subvalue">Počíta sa z nahratých SP dát podľa stĺpca Kód typu úlohy. Ak stĺpec v súbore chýba, tabuľka zobrazí upozornenie.</div>
+        <div class="table-wrap" style="margin-top:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Kód typu úlohy</th>
+                <th>Prevádzka</th>
+                <th>Počet zákaziek</th>
+                <th>Podiel</th>
+                <th>Hodiny</th>
+              </tr>
+            </thead>
+            <tbody id="spTaskTypeRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Percentuálny podiel zákaziek podľa kódu typu úlohy po technikoch</h2>
+        <div class="subvalue">Sledovaní technici: Marčeková, Baláž, Bugár, Homola, Packa, Mikulová, Murcko. Percento je počítané v rámci objednávok daného technika.</div>
+        <div class="table-wrap" style="margin-top:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Technik / SP</th>
+                <th>Kód typu úlohy</th>
+                <th>Prevádzka</th>
+                <th>Počet zákaziek</th>
+                <th>Podiel u technika</th>
+                <th>Hodiny</th>
+              </tr>
+            </thead>
+            <tbody id="spTaskTypeAdvisorRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>Koľko hodín a v akej hodnote vyfakturoval jednotlivý SP</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Meno SP</th>
+                <th>Prevádzka</th>
+                <th>Hodiny</th>
+                <th>Hodnota</th>
+                <th>Priemer EUR/h</th>
+                <th>Podiel hodín</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody id="spAdvisorRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="print-report" id="spPrintReport"></section>
+
+    <section class="screen" id="update">
+      <div class="panel">
+        <h2>Denná aktualizácia vstupov</h2>
+        <div class="settings">
+          <div class="field">
+            <label for="updateReportDate">Stav k dátumu</label>
+            <input id="updateReportDate" value="21.7.2026">
+          </div>
+          <div class="field">
+            <label for="updateWorkDays">Pracovné dni v mesiaci</label>
+            <input id="updateWorkDays" type="number" step="1" value="23">
+          </div>
+          <div class="field">
+            <label for="updateRemainingDays">Zostáva pracovných dní</label>
+            <input id="updateRemainingDays" type="number" step="1" value="8">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="editHead"></thead>
+            <tbody id="editRows"></tbody>
+          </table>
+        </div>
+        <div class="toolbar">
+          <button class="action primary" id="runExcelUpdateBtn" type="button">Aktualizovať z Excelu</button>
+          <button class="action primary" id="updateSaveBtn">Prepočítať a uložiť</button>
+        </div>
+        <div class="subvalue" id="excelUpdateStatus" style="margin-top:10px">
+          GitHub verzia je statická. Dáta aktualizuj vytvorením a nahratím novej verzie index.html.
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="settings">
+      <div class="panel">
+        <h2>Nastavenia plánov a kapacít</h2>
+        <div class="settings">
+          <div class="field">
+            <label for="reportDate">Stav k dátumu</label>
+            <input id="reportDate" value="21.7.2026">
+          </div>
+          <div class="field">
+            <label for="workDays">Pracovné dni v mesiaci</label>
+            <input id="workDays" type="number" step="1" value="23">
+          </div>
+          <div class="field">
+            <label for="remainingDays">Zostáva pracovných dní</label>
+            <input id="remainingDays" type="number" step="1" value="8">
+          </div>
+          <div class="field">
+            <label for="operationFilter">Filter prevádzky</label>
+            <select id="operationFilter">
+              <option value="ALL">Všetky</option>
+              <option value="T5P">T5P</option>
+              <option value="MG">MG</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Prevádzka</th>
+                <th>Mesačný plán hodín</th>
+                <th>Produktívni mechanici</th>
+                <th>Diagnostici</th>
+                <th>Výkon diagnostikov</th>
+                <th>Denná kapacita</th>
+              </tr>
+            </thead>
+            <tbody id="settingsRows"></tbody>
+          </table>
+        </div>
+        <div class="toolbar">
+          <button class="action" id="resetBtn">Obnoviť pôvodné dáta</button>
+          <button class="action primary" id="saveBtn">Prepočítať a uložiť</button>
+          <button class="action" id="printBtn">Tlač / PDF</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const defaultState = {
+      monthName: 'Júl 2026',
+      reportDate: '21.7.2026',
+      updatedAt: '21.07.2026 20:29',
+      workDays: 23,
+      remainingDays: 8,
+      filter: 'ALL',
+      selectedDayIndex: 14,
+      operations: {
+        T5P: { monthlyPlan: 1800, mechanics: 13, diagnostics: 5, diagnosticFactor: 0.3 },
+        MG: { monthlyPlan: 80, mechanics: 1, diagnostics: 0, diagnosticFactor: 0.3 }
+      },
+      days: ["1.7.", "2.7.", "3.7.", "6.7.", "7.7.", "8.7.", "9.7.", "10.7.", "13.7.", "14.7.", "15.7.", "16.7.", "17.7.", "20.7.", "21.7."],
+      serviceAdvisors: {"advisors": [{"name": "Marčeková Natália", "operation": "T5P", "hours": 299.9, "amount": 0.0, "rate": 0.0}, {"name": "Baláž Marek", "operation": "T5P", "hours": 183.6, "amount": 0.0, "rate": 0.0}, {"name": "Packa Marcel", "operation": "T5P", "hours": 105.5, "amount": 0.0, "rate": 0.0}, {"name": "Homola Juraj", "operation": "T5P", "hours": 104.1, "amount": 0.0, "rate": 0.0}, {"name": "Šuplata Sebastián", "operation": "MG", "hours": 93.9, "amount": 0.0, "rate": 0.0}, {"name": "Bugár Radovan", "operation": "T5P", "hours": 90.6, "amount": 0.0, "rate": 0.0}, {"name": "Hrnčiar Vladimír", "operation": "T5P", "hours": 86.9, "amount": 0.0, "rate": 0.0}, {"name": "Mikulová Kristína", "operation": "T5P", "hours": 75.6, "amount": 0.0, "rate": 0.0}, {"name": "Bartovič Róbert", "operation": "T5P", "hours": 69.1, "amount": 0.0, "rate": 0.0}, {"name": "Molnár Ladislav", "operation": "T5P", "hours": 54.2, "amount": 0.0, "rate": 0.0}, {"name": "Fratrič Radovan", "operation": "T5P", "hours": 51.5, "amount": 0.0, "rate": 0.0}, {"name": "Kováč Roman", "operation": "T5P", "hours": 39.4, "amount": 0.0, "rate": 0.0}, {"name": "Kováč Jaroslav", "operation": "T5P", "hours": 6.0, "amount": 0.0, "rate": 0.0}, {"name": "Meško Matej", "operation": "T5P", "hours": 3.4, "amount": 0.0, "rate": 0.0}, {"name": "Kern Matej", "operation": "MG", "hours": 0.4, "amount": 0.0, "rate": 0.0}], "daily": [{"day": "01.07.26", "hours": 54.0}, {"day": "02.07.26", "hours": 97.1}, {"day": "03.07.26", "hours": 92.4}, {"day": "06.07.26", "hours": 58.2}, {"day": "07.07.26", "hours": 64.9}, {"day": "08.07.26", "hours": 92.5}, {"day": "09.07.26", "hours": 75.9}, {"day": "10.07.26", "hours": 90.9}, {"day": "13.07.26", "hours": 111.6}, {"day": "14.07.26", "hours": 83.3}, {"day": "15.07.26", "hours": 79.8}, {"day": "16.07.26", "hours": 78.9}, {"day": "17.07.26", "hours": 107.4}, {"day": "20.07.26", "hours": 73.0}, {"day": "21.07.26", "hours": 104.2}], "dailyByOperation": [{"day": "01.07.26", "operation": "MG", "hours": 9.7}, {"day": "01.07.26", "operation": "T5P", "hours": 44.3}, {"day": "02.07.26", "operation": "MG", "hours": 10.5}, {"day": "02.07.26", "operation": "T5P", "hours": 86.6}, {"day": "03.07.26", "operation": "MG", "hours": 6.5}, {"day": "03.07.26", "operation": "T5P", "hours": 85.9}, {"day": "06.07.26", "operation": "MG", "hours": 2.5}, {"day": "06.07.26", "operation": "T5P", "hours": 55.7}, {"day": "07.07.26", "operation": "MG", "hours": 3.6}, {"day": "07.07.26", "operation": "T5P", "hours": 61.3}, {"day": "08.07.26", "operation": "MG", "hours": 11.1}, {"day": "08.07.26", "operation": "T5P", "hours": 81.4}, {"day": "09.07.26", "operation": "MG", "hours": 4.1}, {"day": "09.07.26", "operation": "T5P", "hours": 71.8}, {"day": "10.07.26", "operation": "MG", "hours": 6.5}, {"day": "10.07.26", "operation": "T5P", "hours": 84.4}, {"day": "13.07.26", "operation": "MG", "hours": 5.6}, {"day": "13.07.26", "operation": "T5P", "hours": 106.0}, {"day": "14.07.26", "operation": "MG", "hours": 4.1}, {"day": "14.07.26", "operation": "T5P", "hours": 79.2}, {"day": "15.07.26", "operation": "LKZBA", "hours": 3.3}, {"day": "15.07.26", "operation": "MG", "hours": 1.9}, {"day": "15.07.26", "operation": "T5P", "hours": 74.6}, {"day": "16.07.26", "operation": "LKZBA", "hours": 0.3}, {"day": "16.07.26", "operation": "MG", "hours": 4.3}, {"day": "16.07.26", "operation": "T5P", "hours": 74.3}, {"day": "17.07.26", "operation": "MG", "hours": 3.6}, {"day": "17.07.26", "operation": "T5P", "hours": 103.8}, {"day": "20.07.26", "operation": "MG", "hours": 4.4}, {"day": "20.07.26", "operation": "T5P", "hours": 68.6}, {"day": "21.07.26", "operation": "MG", "hours": 3.1}, {"day": "21.07.26", "operation": "T5P", "hours": 101.1}], "taskTypes": [{"code": "DIELENSKA", "operation": "T5P", "count": 262, "hours": 675.7}, {"code": "GARANCNA", "operation": "T5P", "count": 108, "hours": 221.9}, {"code": "BEZPLATNA", "operation": "T5P", "count": 70, "hours": 135.5}, {"code": "INTERNA", "operation": "T5P", "count": 43, "hours": 116.3}, {"code": "DIELENSKA", "operation": "MG", "count": 27, "hours": 55.1}, {"code": "PNEUSERVIS", "operation": "T5P", "count": 26, "hours": 26.8}, {"code": "GARANCNA", "operation": "MG", "count": 14, "hours": 6.7}, {"code": "INTERNA", "operation": "MG", "count": 9, "hours": 17.8}, {"code": "KLAMPIARSKA", "operation": "LKZBA", "count": 1, "hours": 0.3}, {"code": "LAKOVACSKA", "operation": "T5P", "count": 1, "hours": 1.5}, {"code": "LAKOVACSKA", "operation": "LKZBA", "count": 1, "hours": 3.3}, {"code": "OPRAVA", "operation": "T5P", "count": 1, "hours": 1.3}, {"code": "PNEUSERVIS", "operation": "MG", "count": 1, "hours": 1.9}], "taskTypesByAdvisor": [{"advisor": "Marčeková", "code": "DIELENSKA", "operation": "T5P", "count": 61, "hours": 186.0}, {"advisor": "Marčeková", "code": "GARANCNA", "operation": "T5P", "count": 27, "hours": 63.8}, {"advisor": "Marčeková", "code": "BEZPLATNA", "operation": "T5P", "count": 25, "hours": 48.1}, {"advisor": "Marčeková", "code": "PNEUSERVIS", "operation": "T5P", "count": 2, "hours": 2.0}, {"advisor": "Baláž", "code": "DIELENSKA", "operation": "T5P", "count": 36, "hours": 119.2}, {"advisor": "Baláž", "code": "GARANCNA", "operation": "T5P", "count": 24, "hours": 33.9}, {"advisor": "Baláž", "code": "BEZPLATNA", "operation": "T5P", "count": 15, "hours": 30.5}, {"advisor": "Bugár", "code": "GARANCNA", "operation": "T5P", "count": 11, "hours": 43.1}, {"advisor": "Bugár", "code": "DIELENSKA", "operation": "T5P", "count": 10, "hours": 41.7}, {"advisor": "Bugár", "code": "BEZPLATNA", "operation": "T5P", "count": 3, "hours": 4.8}, {"advisor": "Bugár", "code": "PNEUSERVIS", "operation": "T5P", "count": 1, "hours": 1.0}, {"advisor": "Homola", "code": "DIELENSKA", "operation": "T5P", "count": 35, "hours": 83.5}, {"advisor": "Homola", "code": "BEZPLATNA", "operation": "T5P", "count": 6, "hours": 11.1}, {"advisor": "Homola", "code": "GARANCNA", "operation": "T5P", "count": 6, "hours": 2.7}, {"advisor": "Homola", "code": "KLAMPIARSKA", "operation": "LKZBA", "count": 1, "hours": 0.3}, {"advisor": "Homola", "code": "LAKOVACSKA", "operation": "T5P", "count": 1, "hours": 1.5}, {"advisor": "Homola", "code": "PNEUSERVIS", "operation": "T5P", "count": 1, "hours": 5.0}, {"advisor": "Packa", "code": "DIELENSKA", "operation": "T5P", "count": 35, "hours": 77.8}, {"advisor": "Packa", "code": "BEZPLATNA", "operation": "T5P", "count": 10, "hours": 18.4}, {"advisor": "Packa", "code": "GARANCNA", "operation": "T5P", "count": 4, "hours": 6.0}, {"advisor": "Packa", "code": "PNEUSERVIS", "operation": "T5P", "count": 2, "hours": 2.0}, {"advisor": "Packa", "code": "OPRAVA", "operation": "T5P", "count": 1, "hours": 1.3}, {"advisor": "Mikulová", "code": "DIELENSKA", "operation": "T5P", "count": 26, "hours": 52.4}, {"advisor": "Mikulová", "code": "BEZPLATNA", "operation": "T5P", "count": 7, "hours": 15.2}, {"advisor": "Mikulová", "code": "GARANCNA", "operation": "T5P", "count": 4, "hours": 5.0}, {"advisor": "Mikulová", "code": "PNEUSERVIS", "operation": "T5P", "count": 3, "hours": 3.0}], "ytd": {"advisors": [{"name": "Marčeková Natália", "operation": "T5P", "hours": 299.9, "amount": 0.0, "rate": 0.0}, {"name": "Baláž Marek", "operation": "T5P", "hours": 183.6, "amount": 0.0, "rate": 0.0}, {"name": "Packa Marcel", "operation": "T5P", "hours": 105.5, "amount": 0.0, "rate": 0.0}, {"name": "Homola Juraj", "operation": "T5P", "hours": 104.1, "amount": 0.0, "rate": 0.0}, {"name": "Šuplata Sebastián", "operation": "MG", "hours": 93.9, "amount": 0.0, "rate": 0.0}, {"name": "Bugár Radovan", "operation": "T5P", "hours": 90.6, "amount": 0.0, "rate": 0.0}, {"name": "Hrnčiar Vladimír", "operation": "T5P", "hours": 86.9, "amount": 0.0, "rate": 0.0}, {"name": "Mikulová Kristína", "operation": "T5P", "hours": 75.6, "amount": 0.0, "rate": 0.0}, {"name": "Bartovič Róbert", "operation": "T5P", "hours": 69.1, "amount": 0.0, "rate": 0.0}, {"name": "Molnár Ladislav", "operation": "T5P", "hours": 54.2, "amount": 0.0, "rate": 0.0}, {"name": "Fratrič Radovan", "operation": "T5P", "hours": 51.5, "amount": 0.0, "rate": 0.0}, {"name": "Kováč Roman", "operation": "T5P", "hours": 39.4, "amount": 0.0, "rate": 0.0}, {"name": "Kováč Jaroslav", "operation": "T5P", "hours": 6.0, "amount": 0.0, "rate": 0.0}, {"name": "Meško Matej", "operation": "T5P", "hours": 3.4, "amount": 0.0, "rate": 0.0}, {"name": "Kern Matej", "operation": "MG", "hours": 0.4, "amount": 0.0, "rate": 0.0}], "daily": [{"day": "01.07.26", "hours": 54.0}, {"day": "02.07.26", "hours": 97.1}, {"day": "03.07.26", "hours": 92.4}, {"day": "06.07.26", "hours": 58.2}, {"day": "07.07.26", "hours": 64.9}, {"day": "08.07.26", "hours": 92.5}, {"day": "09.07.26", "hours": 75.9}, {"day": "10.07.26", "hours": 90.9}, {"day": "13.07.26", "hours": 111.6}, {"day": "14.07.26", "hours": 83.3}, {"day": "15.07.26", "hours": 79.8}, {"day": "16.07.26", "hours": 78.9}, {"day": "17.07.26", "hours": 107.4}, {"day": "20.07.26", "hours": 73.0}, {"day": "21.07.26", "hours": 104.2}], "dailyByOperation": [{"day": "01.07.26", "operation": "MG", "hours": 9.7}, {"day": "01.07.26", "operation": "T5P", "hours": 44.3}, {"day": "02.07.26", "operation": "MG", "hours": 10.5}, {"day": "02.07.26", "operation": "T5P", "hours": 86.6}, {"day": "03.07.26", "operation": "MG", "hours": 6.5}, {"day": "03.07.26", "operation": "T5P", "hours": 85.9}, {"day": "06.07.26", "operation": "MG", "hours": 2.5}, {"day": "06.07.26", "operation": "T5P", "hours": 55.7}, {"day": "07.07.26", "operation": "MG", "hours": 3.6}, {"day": "07.07.26", "operation": "T5P", "hours": 61.3}, {"day": "08.07.26", "operation": "MG", "hours": 11.1}, {"day": "08.07.26", "operation": "T5P", "hours": 81.4}, {"day": "09.07.26", "operation": "MG", "hours": 4.1}, {"day": "09.07.26", "operation": "T5P", "hours": 71.8}, {"day": "10.07.26", "operation": "MG", "hours": 6.5}, {"day": "10.07.26", "operation": "T5P", "hours": 84.4}, {"day": "13.07.26", "operation": "MG", "hours": 5.6}, {"day": "13.07.26", "operation": "T5P", "hours": 106.0}, {"day": "14.07.26", "operation": "MG", "hours": 4.1}, {"day": "14.07.26", "operation": "T5P", "hours": 79.2}, {"day": "15.07.26", "operation": "LKZBA", "hours": 3.3}, {"day": "15.07.26", "operation": "MG", "hours": 1.9}, {"day": "15.07.26", "operation": "T5P", "hours": 74.6}, {"day": "16.07.26", "operation": "LKZBA", "hours": 0.3}, {"day": "16.07.26", "operation": "MG", "hours": 4.3}, {"day": "16.07.26", "operation": "T5P", "hours": 74.3}, {"day": "17.07.26", "operation": "MG", "hours": 3.6}, {"day": "17.07.26", "operation": "T5P", "hours": 103.8}, {"day": "20.07.26", "operation": "MG", "hours": 4.4}, {"day": "20.07.26", "operation": "T5P", "hours": 68.6}, {"day": "21.07.26", "operation": "MG", "hours": 3.1}, {"day": "21.07.26", "operation": "T5P", "hours": 101.1}], "taskTypes": [{"code": "DIELENSKA", "operation": "T5P", "count": 262, "hours": 675.7}, {"code": "GARANCNA", "operation": "T5P", "count": 108, "hours": 221.9}, {"code": "BEZPLATNA", "operation": "T5P", "count": 70, "hours": 135.5}, {"code": "INTERNA", "operation": "T5P", "count": 43, "hours": 116.3}, {"code": "DIELENSKA", "operation": "MG", "count": 27, "hours": 55.1}, {"code": "PNEUSERVIS", "operation": "T5P", "count": 26, "hours": 26.8}, {"code": "GARANCNA", "operation": "MG", "count": 14, "hours": 6.7}, {"code": "INTERNA", "operation": "MG", "count": 9, "hours": 17.8}, {"code": "KLAMPIARSKA", "operation": "LKZBA", "count": 1, "hours": 0.3}, {"code": "LAKOVACSKA", "operation": "T5P", "count": 1, "hours": 1.5}, {"code": "LAKOVACSKA", "operation": "LKZBA", "count": 1, "hours": 3.3}, {"code": "OPRAVA", "operation": "T5P", "count": 1, "hours": 1.3}, {"code": "PNEUSERVIS", "operation": "MG", "count": 1, "hours": 1.9}], "taskTypesByAdvisor": [{"advisor": "Marčeková", "code": "DIELENSKA", "operation": "T5P", "count": 61, "hours": 186.0}, {"advisor": "Marčeková", "code": "GARANCNA", "operation": "T5P", "count": 27, "hours": 63.8}, {"advisor": "Marčeková", "code": "BEZPLATNA", "operation": "T5P", "count": 25, "hours": 48.1}, {"advisor": "Marčeková", "code": "PNEUSERVIS", "operation": "T5P", "count": 2, "hours": 2.0}, {"advisor": "Baláž", "code": "DIELENSKA", "operation": "T5P", "count": 36, "hours": 119.2}, {"advisor": "Baláž", "code": "GARANCNA", "operation": "T5P", "count": 24, "hours": 33.9}, {"advisor": "Baláž", "code": "BEZPLATNA", "operation": "T5P", "count": 15, "hours": 30.5}, {"advisor": "Bugár", "code": "GARANCNA", "operation": "T5P", "count": 11, "hours": 43.1}, {"advisor": "Bugár", "code": "DIELENSKA", "operation": "T5P", "count": 10, "hours": 41.7}, {"advisor": "Bugár", "code": "BEZPLATNA", "operation": "T5P", "count": 3, "hours": 4.8}, {"advisor": "Bugár", "code": "PNEUSERVIS", "operation": "T5P", "count": 1, "hours": 1.0}, {"advisor": "Homola", "code": "DIELENSKA", "operation": "T5P", "count": 35, "hours": 83.5}, {"advisor": "Homola", "code": "BEZPLATNA", "operation": "T5P", "count": 6, "hours": 11.1}, {"advisor": "Homola", "code": "GARANCNA", "operation": "T5P", "count": 6, "hours": 2.7}, {"advisor": "Homola", "code": "KLAMPIARSKA", "operation": "LKZBA", "count": 1, "hours": 0.3}, {"advisor": "Homola", "code": "LAKOVACSKA", "operation": "T5P", "count": 1, "hours": 1.5}, {"advisor": "Homola", "code": "PNEUSERVIS", "operation": "T5P", "count": 1, "hours": 5.0}, {"advisor": "Packa", "code": "DIELENSKA", "operation": "T5P", "count": 35, "hours": 77.8}, {"advisor": "Packa", "code": "BEZPLATNA", "operation": "T5P", "count": 10, "hours": 18.4}, {"advisor": "Packa", "code": "GARANCNA", "operation": "T5P", "count": 4, "hours": 6.0}, {"advisor": "Packa", "code": "PNEUSERVIS", "operation": "T5P", "count": 2, "hours": 2.0}, {"advisor": "Packa", "code": "OPRAVA", "operation": "T5P", "count": 1, "hours": 1.3}, {"advisor": "Mikulová", "code": "DIELENSKA", "operation": "T5P", "count": 26, "hours": 52.4}, {"advisor": "Mikulová", "code": "BEZPLATNA", "operation": "T5P", "count": 7, "hours": 15.2}, {"advisor": "Mikulová", "code": "GARANCNA", "operation": "T5P", "count": 4, "hours": 5.0}, {"advisor": "Mikulová", "code": "PNEUSERVIS", "operation": "T5P", "count": 3, "hours": 3.0}], "months": ["Júl"]}, "month": "Júl", "sourceSheet": "Júl 26"},
+      people: [
+        { name: "Pekarik Miroslav", operation: 'MG', type: 'mechanic', values: [6.5, 10.5, 6.5, 2.5, 3.6, 2.9, 2.5, 1.5, 0, 0, 0, 0, 0, 0, 3.1], statuses: ["", "", "", "", "", "", "", "", "Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)"], absences: [{"type": "Dovolenka", "from": "2026-07-13", "to": "2026-07-24", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}, {"type": "Dovolenka", "from": "2026-08-10", "to": "2026-08-14", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Aladar Dorušiak", operation: 'T5P', type: 'mechanic', values: [0, 0, 0.3, 1.0, 0, 0, 8.9, 29.9, 4.5, 3.8, 2.9, 0, 21.4, 1.6, 5.1], statuses: ["Dovolenka (plánované)", "Dovolenka (plánované)", "Dovolenka (plánované)", "", "", "", "", "", "", "", "", "", "", "", ""], absences: [{"type": "Dovolenka", "from": "2026-06-29", "to": "2026-07-03", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}, {"type": "Dovolenka", "from": "2026-08-24", "to": "2026-09-04", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Bendik Karol", operation: 'T5P', type: 'mechanic', values: [1.7, 7.5, 5.3, 0, 14.8, 11.3, 5.1, 9.0, 3.3, 9.1, 7.9, 8.0, 7.7, 16.6, 4.3], statuses: ["", "", "", "", "", "", "", "", "", "", "", "", "", "Dovolenka (plánované)", "Dovolenka (plánované)"], absences: [{"type": "Dovolenka", "from": "2026-07-20", "to": "2026-07-31", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}, {"type": "Dovolenka", "from": "2026-08-03", "to": "2026-08-07", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Benkovský Miroslav", operation: 'T5P', type: 'diagnostic', values: [0, 0, 0, 0, 3.2, 4.5, 1.0, 0, 10.6, 1.9, 0, 0, 2.7, 0.8, 1.0], absences: [{"type": "Dovolenka", "from": "2026-08-03", "to": "2026-08-14", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Džačovský Michal", operation: 'T5P', type: 'mechanic', values: [4.4, 4.0, 8.9, 8.4, 12.6, 12.4, 2.1, 0.7, 9.1, 7.4, 8.7, 2.9, 10.1, 6.2, 8.6], statuses: ["", "", "", "", "", "", "", "Lekár (schválené)", "", "", "", "", "", "", ""], absences: [{"type": "Lekár", "from": "2026-07-10", "to": "2026-07-10", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-07-29", "to": "2026-08-10", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Franko Roman", operation: 'T5P', type: 'mechanic', values: [0, 0, 0, 0, 0, 0, 0, 1.0, 1.0, 0, 0, 0, 0, 0, 0], absences: [{"type": "Dovolenka", "from": "2026-08-17", "to": "2026-08-31", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Hrdlička Beňadik", operation: 'T5P', type: 'mechanic', values: [1.0, 1.8, 15.5, 7.8, 6.7, 8.1, 12.0, 5.8, 4.3, 1.0, 6.4, 1.0, 15.5, 10.7, 6.0] },
+        { name: "Kuruc Štefan ml.", operation: 'T5P', type: 'diagnostic', values: [0, 10.0, 2.7, 0, 3.0, 3.0, 1.8, 0, 26.9, 6.3, 1.0, 0.5, 4.6, 0.3, 0.6] },
+        { name: "Lukáš Stacho", operation: 'T5P', type: 'mechanic', values: [0, 12.4, 16.1, 5.7, 1.5, 2.0, 3.7, 0, 5.5, 10.1, 2.2, 2.0, 11.6, 4.5, 9.0], absences: [{"type": "Dovolenka", "from": "2026-07-30", "to": "2026-08-07", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}, {"type": "Dovolenka", "from": "2026-08-31", "to": "2026-09-15", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Mészáros Tibor", operation: 'T5P', type: 'mechanic', values: [4.8, 4.1, 13.1, 3.3, 2.2, 1.5, 0.7, 15.7, 12.7, 9.4, 0, 0, 0, 0.7, 20.6], statuses: ["", "", "", "Lekár (schválené)", "", "", "", "", "", "", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "", ""], absences: [{"type": "Lekár", "from": "2026-07-06", "to": "2026-07-06", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-07-15", "to": "2026-07-17", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-20", "to": "2026-08-21", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Molnár Alexander", operation: 'T5P', type: 'mechanic', values: [0, 6.0, 3.9, 3.0, 8.1, 10.5, 12.7, 8.6, 6.3, 3.0, 10.3, 15.6, 7.9, 0, 0] },
+        { name: "Pavol Backa", operation: 'T5P', type: 'mechanic', values: [3.5, 16.2, 9.0, 0, 0, 2.6, 0, 0, 0, 0, 9.5, 9.3, 0, 15.8, 15.4], statuses: ["", "", "", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", "", "", "", "", ""], absences: [{"type": "Dovolenka", "from": "2026-07-06", "to": "2026-07-14", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Rajták Michal", operation: 'T5P', type: 'diagnostic', values: [3.6, 1.9, 0.1, 1.0, 0, 0, 1.4, 1.5, 0.5, 2.0, 1.5, 6.3, 5.4, 0.7, 7.5], statuses: ["", "", "", "", "", "", "", "", "", "", "", "", "Dovolenka (schválené)", "", ""], absences: [{"type": "Dovolenka", "from": "2026-07-17", "to": "2026-07-17", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-07-27", "to": "2026-07-31", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-10", "to": "2026-08-14", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Roman Šuplata", operation: 'T5P', type: 'mechanic', values: [3.2, 3.3, 8.0, 4.5, 4.0, 11.8, 10.7, 8.3, 6.9, 7.6, 9.3, 15.4, 2.1, 1.9, 9.4], statuses: ["Lekár sprevádzanie (schválené)", "", "", "", "", "", "", "", "", "", "", "", "", "", ""], absences: [{"type": "Lekár sprevádzanie", "from": "2026-07-01", "to": "2026-07-01", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-10", "to": "2026-08-14", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Seilinger Ladislav", operation: 'T5P', type: 'mechanic', values: [16.9, 0.5, 0, 0, 0, 1.5, 0, 4.8, 5.0, 2.9, 1.2, 8.5, 1.0, 7.1, 7.7], absences: [{"type": "Dovolenka", "from": "2026-07-27", "to": "2026-07-31", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-10", "to": "2026-08-21", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Szilvásy Adam", operation: 'T5P', type: 'mechanic', values: [1.9, 14.0, 0.2, 18.2, 2.3, 5.4, 3.2, 2.5, 6.3, 3.8, 0.6, 0, 2.7, 4.4, 0.3], statuses: ["", "", "", "", "", "", "", "", "", "", "", "Dovolenka (schválené)", "Dovolenka (schválené)", "Dovolenka (schválené)", ""], absences: [{"type": "Dovolenka", "from": "2026-07-16", "to": "2026-07-16", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-07-17", "to": "2026-07-20", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-19", "to": "2026-08-21", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}] },
+        { name: "Šimončič Martin", operation: 'T5P', type: 'mechanic', values: [3.9, 0, 0, 0, 1.0, 1.5, 5.1, 0, 1.6, 8.5, 9.4, 4.4, 6.5, 0, 0], statuses: ["", "Lekár ostatné (schválené)", "", "", "", "", "", "", "", "", "", "", "", "", ""], absences: [{"type": "Lekár ostatné", "from": "2026-07-02", "to": "2026-07-02", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-03", "to": "2026-08-07", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Šuplata Jaroslav ml.", operation: 'T5P', type: 'diagnostic', values: [0, 0.7, 2.0, 1.8, 0, 8.8, 3.4, 1.0, 6.5, 2.0, 1.8, 0, 5.1, 0.9, 1.2], statuses: ["", "", "", "", "", "", "", "", "", "", "", "", "", "Dovolenka (schválené)", "Dovolenka (schválené)"], absences: [{"type": "Dovolenka", "from": "2026-07-20", "to": "2026-07-31", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-07", "to": "2026-08-07", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}, {"type": "Dovolenka", "from": "2026-08-31", "to": "2026-08-31", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] },
+        { name: "Ušák Martin", operation: 'T5P', type: 'diagnostic', values: [0, 2.6, 0, 0, 0, 2.9, 0.6, 0, 0, 0, 0, 2.4, 0, 0, 1.1], statuses: ["", "Dovolenka (schválené)", "Dovolenka (schválené)", "", "", "", "", "", "", "", "", "", "", "", ""], absences: [{"type": "Dovolenka", "from": "2026-07-02", "to": "2026-07-03", "status": "Schválené", "note": "AbsList 6.7.2026 08:25, Schvalene"}, {"type": "Dovolenka", "from": "2026-08-03", "to": "2026-08-10", "status": "Plánované", "note": "AbsList 6.7.2026 08:25, Planovana nepritomnost"}] }
+      ],
+      previousMonth: {"monthName": "Jún 2026", "reportDate": "30.6.2026", "updatedAt": "21.07.2026 20:29", "workDays": 22, "remainingDays": 0, "operations": {"T5P": {"monthlyPlan": 2300, "mechanics": 13, "diagnostics": 5, "diagnosticFactor": 0.3}, "MG": {"monthlyPlan": 110, "mechanics": 1, "diagnostics": 0, "diagnosticFactor": 0.3}}, "days": ["1.6.", "2.6.", "3.6.", "4.6.", "5.6.", "8.6.", "9.6.", "10.6.", "11.6.", "12.6.", "15.6.", "16.6.", "17.6.", "18.6.", "19.6.", "22.6.", "23.6.", "24.6.", "25.6.", "26.6.", "29.6.", "30.6."], "people": [{"name": "Pekarik Miroslav", "operation": "MG", "type": "mechanic", "values": [0, 4.6, 10.3, 6.5, 13.5, 5.2, 0, 0, 7.4, 3.5, 4.1, 6.5, 5.2, 10.0, 6.0, 2.0, 1.9, 25.5, 2.5, 3.8, 0, 5.0]}, {"name": "Aladar Dorušiak", "operation": "T5P", "type": "mechanic", "values": [3.4, 1.3, 7.2, 4.4, 11.3, 3.2, 11.1, 12.5, 9.0, -20.2, 29.0, 8.9, 3.9, 7.2, 6.0, 0, 7.6, 5.2, 21.4, 2.9, 7.3, 9.1]}, {"name": "Bendik Karol", "operation": "T5P", "type": "mechanic", "values": [2.5, 1.8, 12.8, 10.6, 5.8, 5.4, 7.5, 8.1, 0, 3.8, 3.9, 6.4, 5.7, 29.3, 5.5, 11.5, 13.9, 13.8, 4.2, 6.7, 12.1, 13.5]}, {"name": "Benkovský Miroslav", "operation": "T5P", "type": "diagnostic", "values": [0, 0.5, 0.3, 0, 0, 0.5, 0, 0, 0, 0, 15.0, 0, 0, 0, 0, 0, 0, 1.0, 1.2, 0, 0, 0.3]}, {"name": "Džačovský Michal", "operation": "T5P", "type": "mechanic", "values": [1.0, 9.8, 6.0, 5.3, 9.5, 10.0, 12.9, 4.4, 8.3, 2.4, 2.8, 3.9, 3.0, 0, 4.2, 0, 12.9, 19.9, 13.4, 3.3, 6.1, 15.5]}, {"name": "Franko Roman", "operation": "T5P", "type": "mechanic", "values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Hrdlička Beňadik", "operation": "T5P", "type": "mechanic", "values": [5.5, 6.9, 3.9, 9.5, 2.5, 0, 0, 0, 0, 0, 0, 0, 0, 4.8, 4.8, 0, 11.7, 3.4, 11.3, 7.9, 0, 9.0]}, {"name": "Kuruc Štefan ml.", "operation": "T5P", "type": "diagnostic", "values": [0, 1.6, 0, 3.9, 2.5, 0, -0.7, 2.2, 0, 3.5, 4.6, 6.6, 5.7, 1.3, 3.8, 0, 7.4, 3.0, 0, 1.0, 0, 5.4]}, {"name": "Lukáš Stacho", "operation": "T5P", "type": "mechanic", "values": [2.7, 16.9, 0, 3.4, 0, 0, 5.9, 5.4, 4.4, 8.1, 3.5, 7.6, 15.0, 3.7, 4.0, 8.9, 1.1, 4.6, 1.0, 0.8, 0, 1.8]}, {"name": "Mészáros Tibor", "operation": "T5P", "type": "mechanic", "values": [6.8, 4.6, 13.8, 2.6, 9.3, 7.4, 11.4, 14.9, 4.8, 9.9, 13.0, 3.4, 0, 1.8, 4.7, 5.3, 6.3, 4.7, 0, 3.5, 48.1, 9.6]}, {"name": "Molnár Alexander", "operation": "T5P", "type": "mechanic", "values": [0, 10.3, 1.7, 14.7, 2.6, 11.4, 6.4, 4.1, 14.4, 6.7, 0.8, 0, 9.9, 0, 7.5, 5.4, 6.8, 8.0, 9.4, 9.2, 8.0, 12.7]}, {"name": "Pavol Backa", "operation": "T5P", "type": "mechanic", "values": [7.5, 9.8, 3.0, 15.7, 6.3, 3.2, 1.1, 17.6, 8.0, 13.8, 14.6, 9.8, 10.5, 8.9, 12.3, 2.7, 5.0, 16.8, 16.9, 7.9, 10.3, 4.8]}, {"name": "Rajták Michal", "operation": "T5P", "type": "diagnostic", "values": [3.3, 0, 4.0, 7.0, 3.7, 0, 2.3, 15.9, 12.0, 0, 13.1, 5.1, 1.6, 1.5, 0, 4.3, 1.1, 3.8, 7.5, 1.5, 3.2, 7.4]}, {"name": "Roman Šuplata", "operation": "T5P", "type": "mechanic", "values": [2.5, 3.4, 6.8, 2.8, 12.1, 6.2, 9.8, 4.3, 8.2, 11.5, 12.7, 14.7, 10.3, 5.9, 9.5, 2.8, 13.9, 9.3, 6.4, 14.4, 4.3, 7.5]}, {"name": "Seilinger Ladislav", "operation": "T5P", "type": "mechanic", "values": [2.5, 0, 15.0, 0.3, 4.4, 0, 3.4, 13.5, 0, 8.9, 11.2, 9.0, 1.0, 0, 8.6, 7.2, 14.2, 13.7, 4.3, 9.8, 10.0, 13.3]}, {"name": "Szilvásy Adam", "operation": "T5P", "type": "mechanic", "values": [1.5, 1.9, 0, 7.2, 0.2, 0, 7.0, 0, 2.2, 1.0, 8.5, 13.2, 1.0, 11.5, 2.7, 4.1, 17.6, 14.8, 7.7, 5.2, 10.4, 20.4]}, {"name": "Šimončič Martin", "operation": "T5P", "type": "mechanic", "values": [0, 9.8, 7.5, 3.4, 5.4, 0, 2.5, 1.6, 13.8, 0, 1.6, 3.9, 7.0, 0, 1.7, 8.3, 3.3, 7.6, 9.1, 32.0, 12.9, 5.1]}, {"name": "Šuplata Jaroslav ml.", "operation": "T5P", "type": "diagnostic", "values": [1.2, 3.5, 2.4, 5.0, 1.5, 0, 0.8, 2.6, 5.7, 1.0, 6.5, 5.4, 4.0, 0, 0, 1.8, 4.2, 2.3, 8.8, 3.8, 0, 6.8]}, {"name": "Ušák Martin", "operation": "T5P", "type": "diagnostic", "values": [1.5, 1.7, 0, 0, 2.9, 0, 2.0, 0, 4.2, 2.0, 3.0, 2.2, 0, 0, 0, 0, 1.6, 0, 0, 1.0, 0, 7.3]}], "serviceAdvisors": {"advisors": [], "daily": []}, "monthKey": "2026-06", "totals": {"T5P": 2083.3, "MG": 123.5}}
+    };
+
+    const storeKey = 'pkw-prevadzky-porovnanie-v20260721-1784658370-1784658584';
+    const assistantPageUrl = '';
+    const serverUpdateUrl = '';
+    const advisorUploadUrl = '';
+    const peopleUploadUrl = '';
+    let state = loadState();
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(storeKey);
+        return saved ? JSON.parse(saved) : clone(defaultState);
+      } catch {
+        return clone(defaultState);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(storeKey, JSON.stringify(state));
+    }
+
+    function fmt(value, decimals = 1) {
+      return Number(value || 0).toLocaleString('sk-SK', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function pct(value) {
+      return `${fmt(value, 1)} %`;
+    }
+
+    const plannedAdvisorConfig = [
+      { label: 'Marčeková', displayName: 'Marčeková Natália', operation: 'T5P' },
+      { label: 'Bugár', displayName: 'Bugár Radovan', operation: 'T5P' },
+      { label: 'Baláž', displayName: 'Baláž Marek', operation: 'T5P' },
+      { label: 'Packa', displayName: 'Packa Marcel', operation: 'T5P' },
+      { label: 'Homola', displayName: 'Homola Juraj', operation: 'T5P' },
+      { label: 'Mikulová', displayName: 'Mikulová Kristína', operation: 'T5P' },
+      { label: 'Šuplata', displayName: 'Šuplata Sebastián', operation: 'MG' }
+    ];
+
+    function textKey(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    }
+
+    function plannedAdvisorMatch(name) {
+      const key = textKey(name);
+      return plannedAdvisorConfig.find(item => key.includes(textKey(item.label))) || null;
+    }
+
+    function money(value) {
+      return `${Number(value || 0).toLocaleString('sk-SK', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      })} EUR`;
+    }
+
+    function remainingGapText(value) {
+      if (value === null || value === undefined) return '-';
+      return value <= 0 ? `nad planom ${fmt(Math.abs(value))} h` : `${fmt(value)} h`;
+    }
+
+    function remainingNeedText(value) {
+      if (value === null || value === undefined) return '-';
+      return value <= 0 ? 'splnene' : `${fmt(value)} h`;
+    }
+
+    function total(person) {
+      return person.values.reduce((sum, value) => sum + Number(value || 0), 0);
+    }
+
+    function operations() {
+      return Object.keys(state.operations);
+    }
+
+    function filteredPeople() {
+      return state.filter === 'ALL' ? state.people : state.people.filter(person => person.operation === state.filter);
+    }
+
+    function snapshotOperations(snapshot) {
+      return Object.keys(snapshot.operations || {});
+    }
+
+    function snapshotFilteredPeople(snapshot) {
+      return state.filter === 'ALL' ? snapshot.people : snapshot.people.filter(person => person.operation === state.filter);
+    }
+
+    function snapshotTotal(person) {
+      return (person.values || []).reduce((sum, value) => sum + Number(value || 0), 0);
+    }
+
+    function snapshotOperationActual(snapshot, operation) {
+      return (snapshot.people || [])
+        .filter(person => person.operation === operation)
+        .reduce((sum, person) => sum + snapshotTotal(person), 0);
+    }
+
+    function isoFromDayLabel(dayLabel) {
+      const [day, month] = String(dayLabel || '').split('.').map(value => Number(value));
+      if (!day || !month) return '';
+      return `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function isoFromReportDate() {
+      const [day, month, year] = String(state.reportDate || '').split('.').map(value => Number(value));
+      if (!day || !month || !year) return '';
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function reportPeriodText() {
+      const parts = String(state.reportDate || '').split('.').map(value => Number(value));
+      if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) return `do ${state.reportDate || '-'}`;
+      return `1.${parts[1]}.${parts[2]} - ${parts[0]}.${parts[1]}.${parts[2]}`;
+    }
+
+    function absencesForDay(person, dayIndex) {
+      const dayIso = isoFromDayLabel(state.days[dayIndex]);
+      if (!dayIso) return [];
+      return (person.absences || []).filter(item => item.from <= dayIso && item.to >= dayIso);
+    }
+
+    function dayStatus(person, dayIndex) {
+      const imported = absencesForDay(person, dayIndex);
+      if (imported.length) {
+        return imported.map(item => `${item.type}${item.status ? ` (${item.status})` : ''}`).join(' / ');
+      }
+      return person.statuses && person.statuses[dayIndex] ? person.statuses[dayIndex] : '';
+    }
+
+    function absenceSummary(person) {
+      const reportIso = isoFromReportDate();
+      const upcoming = (person.absences || [])
+        .filter(item => !reportIso || item.to >= reportIso)
+        .sort((a, b) => a.from.localeCompare(b.from));
+      const elapsedDays = Math.max(1, state.workDays - state.remainingDays);
+      const countedAbsenceDays = absenceDayCount(person, elapsedDays);
+      if (upcoming.length) {
+        const futureText = upcoming.slice(0, 3).map(item => `${item.type} ${item.from.slice(8)}.${item.from.slice(5, 7)}.-${item.to.slice(8)}.${item.to.slice(5, 7)}.`).join(', ');
+        return countedAbsenceDays ? `${countedAbsenceDays} deň/dni v mesiaci, ${futureText}` : futureText;
+      }
+      const counts = (person.statuses || []).reduce((items, status) => {
+        if (status) items[status] = (items[status] || 0) + 1;
+        return items;
+      }, {});
+      const labels = Object.entries(counts).map(([status, count]) => `${status} ${count}x`);
+      if (countedAbsenceDays && labels.length) return `${countedAbsenceDays} deň/dni v mesiaci, ${labels.join(', ')}`;
+      if (countedAbsenceDays) return `${countedAbsenceDays} deň/dni v mesiaci`;
+      return labels.length ? labels.join(', ') : '-';
+    }
+
+    function personDailyCapacity(person) {
+      const config = state.operations[person.operation];
+      if (!config) return 0;
+      if (person.type === 'diagnostic') return 8 * config.diagnosticFactor;
+      if (person.type === 'mechanic') return 8;
+      return 0;
+    }
+
+    function absenceDayCount(person, limit = state.days.length) {
+      return state.days
+        .slice(0, limit)
+        .filter((day, index) => Boolean(dayStatus(person, index)))
+        .length;
+    }
+
+    function personEffectiveCapacity(person, limit = state.days.length) {
+      const dailyCapacity = personDailyCapacity(person);
+      const availableDays = Math.max(0, limit - absenceDayCount(person, limit));
+      return dailyCapacity * availableDays;
+    }
+
+    function operationNominalCapacity(operation, daysCount) {
+      const config = state.operations[operation];
+      if (!config) return 0;
+      return (config.mechanics * 8 + config.diagnostics * 8 * config.diagnosticFactor) * daysCount;
+    }
+
+    function previousPersonActual(person) {
+      if (!state.previousMonth) return null;
+      const previous = (state.previousMonth.people || []).find(item => item.name === person.name && item.operation === person.operation);
+      return previous ? snapshotTotal(previous) : null;
+    }
+
+    function absenceCapacityStats(data) {
+      const productiveRows = data.personRows.filter(person => person.type === 'mechanic' || person.type === 'diagnostic');
+      const fullDayHours = 8;
+      const byType = type => {
+        const rows = productiveRows.filter(person => person.type === type);
+        const workDays = rows.length * data.elapsedDays;
+        const workHours = workDays * fullDayHours;
+        const absenceDays = rows.reduce((sum, person) => sum + person.absenceDays, 0);
+        const absenceHours = absenceDays * fullDayHours;
+        return { count: rows.length, workDays, workHours, absenceDays, absenceHours };
+      };
+      const mechanics = byType('mechanic');
+      const diagnostics = byType('diagnostic');
+      return {
+        reportDays: data.elapsedDays,
+        people: productiveRows.length,
+        workDays: mechanics.workDays + diagnostics.workDays,
+        workHours: mechanics.workHours + diagnostics.workHours,
+        absenceDays: mechanics.absenceDays + diagnostics.absenceDays,
+        absenceHours: mechanics.absenceHours + diagnostics.absenceHours,
+        mechanics,
+        diagnostics
+      };
+    }
+
+    function model() {
+      const elapsedDays = Math.max(1, state.workDays - state.remainingDays);
+      const selectedOperations = state.filter === 'ALL' ? operations() : [state.filter];
+      const allOpRows = operations().map(operation => {
+        const config = state.operations[operation];
+        const people = state.people.filter(person => person.operation === operation);
+        const actual = people.reduce((sum, person) => sum + total(person), 0);
+        const nominalCapacityToDate = operationNominalCapacity(operation, elapsedDays);
+        const capacityToDate = people.reduce((sum, person) => sum + personEffectiveCapacity(person, elapsedDays), 0);
+        const monthCapacity = people.reduce((sum, person) => sum + personEffectiveCapacity(person, state.days.length), 0);
+        const capacityLoss = Math.max(0, nominalCapacityToDate - capacityToDate);
+        const productivity = capacityToDate ? actual / capacityToDate * 100 : 0;
+        const plannedToDate = config.monthlyPlan && operationNominalCapacity(operation, state.workDays)
+          ? config.monthlyPlan * capacityToDate / operationNominalCapacity(operation, state.workDays)
+          : 0;
+        const efficiency = plannedToDate ? actual / plannedToDate * 100 : null;
+        const missing = config.monthlyPlan ? config.monthlyPlan - actual : null;
+        const needDay = config.monthlyPlan && state.remainingDays && missing > 0 ? missing / state.remainingDays : null;
+        const progress = config.monthlyPlan ? actual / config.monthlyPlan * 100 : null;
+        const averageDay = elapsedDays ? actual / elapsedDays : 0;
+        const forecast = averageDay * state.workDays;
+        const forecastDiff = config.monthlyPlan ? forecast - config.monthlyPlan : null;
+        return { operation, config, people, actual, capacityToDate, nominalCapacityToDate, monthCapacity, capacityLoss, productivity, plannedToDate, efficiency, missing, needDay, progress, averageDay, forecast, forecastDiff };
+      });
+      const opRows = allOpRows.filter(row => selectedOperations.includes(row.operation));
+      const actual = opRows.reduce((sum, row) => sum + row.actual, 0);
+      const capacityToDate = opRows.reduce((sum, row) => sum + row.capacityToDate, 0);
+      const productivity = capacityToDate ? actual / capacityToDate * 100 : 0;
+      const monthlyPlan = opRows.reduce((sum, row) => sum + Number(row.config.monthlyPlan || 0), 0);
+      const plannedToDate = opRows.reduce((sum, row) => sum + Number(row.plannedToDate || 0), 0);
+      const efficiency = plannedToDate ? actual / plannedToDate * 100 : null;
+      const missing = monthlyPlan ? monthlyPlan - actual : null;
+      const needDay = missing !== null && state.remainingDays && missing > 0 ? missing / state.remainingDays : null;
+      const progress = monthlyPlan ? actual / monthlyPlan * 100 : null;
+      const best = [...opRows].sort((a, b) => b.actual - a.actual)[0];
+      const personRows = filteredPeople().map(person => {
+        const config = state.operations[person.operation];
+        const dailyCapacity = personDailyCapacity(person);
+        const absenceDays = absenceDayCount(person, elapsedDays);
+        const personCapacity = personEffectiveCapacity(person, elapsedDays);
+        const actual = total(person);
+        const productivity = personCapacity ? actual / personCapacity * 100 : 0;
+        const peopleInType = state.people.filter(item => item.operation === person.operation && item.type === person.type).length || 1;
+        const productiveWeight = config.mechanics + config.diagnostics * config.diagnosticFactor;
+        const typeWeight = person.type === 'diagnostic' ? config.diagnostics * config.diagnosticFactor : person.type === 'mechanic' ? config.mechanics : 0;
+        const typePlan = config.monthlyPlan && productiveWeight && typeWeight ? config.monthlyPlan * typeWeight / productiveWeight : null;
+        const plan = typePlan ? typePlan / peopleInType : null;
+        const missing = plan !== null ? plan - actual : null;
+        const needDay = missing !== null && state.remainingDays && missing > 0 ? missing / state.remainingDays : null;
+        const planProgress = plan ? actual / plan * 100 : null;
+        return { ...person, actual, productivity, plan, missing, needDay, dailyCapacity, absenceDays, personCapacity, planProgress };
+      });
+      const daily = state.days.map((day, index) => {
+        const item = { day };
+        selectedOperations.forEach(operation => {
+          item[operation] = state.people
+            .filter(person => person.operation === operation)
+            .reduce((sum, person) => sum + Number(person.values[index] || 0), 0);
+        });
+        item.total = selectedOperations.reduce((sum, operation) => sum + item[operation], 0);
+        return item;
+      });
+      return { elapsedDays, selectedOperations, allOpRows, opRows, actual, capacityToDate, productivity, plannedToDate, efficiency, monthlyPlan, missing, needDay, progress, best, personRows, daily };
+    }
+
+    function serviceAdvisorModel(baseData) {
+      const source = state.serviceAdvisors || { advisors: [], daily: [] };
+      const selectedOperations = state.filter === 'ALL' ? operations() : [state.filter];
+      const monthlyPlan = baseData.monthlyPlan;
+      const plannedAdvisors = plannedAdvisorConfig.filter(item => state.filter === 'ALL' || selectedOperations.includes(item.operation));
+      const advisorPlan = monthlyPlan && plannedAdvisors.length ? monthlyPlan / plannedAdvisors.length : null;
+      const advisorPlanToDate = advisorPlan && state.workDays ? advisorPlan * baseData.elapsedDays / state.workDays : null;
+      let rows = (source.advisors || [])
+        .filter(item => !item.operation || state.filter === 'ALL' || selectedOperations.includes(item.operation))
+        .map(item => {
+          const match = plannedAdvisorMatch(item.name);
+          return {
+            ...item,
+            hours: Number(item.hours || 0),
+            amount: Number(item.amount || 0),
+            rate: item.rate ? Number(item.rate) : (Number(item.hours || 0) ? Number(item.amount || 0) / Number(item.hours || 0) : 0),
+            advisorPlanLabel: match ? match.label : '',
+            advisorPlanOperation: match ? match.operation : ''
+          };
+        })
+        .map(item => ({
+          ...item,
+          advisorPlan: item.advisorPlanLabel ? advisorPlan : null,
+          planProgress: item.advisorPlanLabel && advisorPlan ? item.hours / advisorPlan * 100 : null,
+          planToDate: item.advisorPlanLabel ? advisorPlanToDate : null,
+          progressToDate: item.advisorPlanLabel && advisorPlanToDate ? item.hours / advisorPlanToDate * 100 : null
+        }));
+      plannedAdvisors.forEach(advisor => {
+        if (!rows.some(row => row.advisorPlanLabel === advisor.label)) {
+          rows.push({
+            name: advisor.displayName,
+            operation: advisor.operation,
+            hours: 0,
+            amount: 0,
+            rate: 0,
+            advisorPlanLabel: advisor.label,
+            advisorPlanOperation: advisor.operation,
+            advisorPlan,
+            planProgress: advisorPlan ? 0 : null,
+            planToDate: advisorPlanToDate,
+            progressToDate: advisorPlanToDate ? 0 : null
+          });
+        }
+      });
+      rows = rows.sort((a, b) => b.hours - a.hours);
+      const hours = rows.reduce((sum, item) => sum + item.hours, 0);
+      const amount = rows.reduce((sum, item) => sum + item.amount, 0);
+      const missing = monthlyPlan ? monthlyPlan - hours : null;
+      const needDay = missing !== null && state.remainingDays && missing > 0 ? missing / state.remainingDays : null;
+      const forecast = baseData.elapsedDays ? hours / baseData.elapsedDays * state.workDays : 0;
+      const forecastDiff = monthlyPlan ? forecast - monthlyPlan : null;
+      const operationDailySource = (source.dailyByOperation || []).filter(item => item.day);
+      const dailySource = (source.daily || []).filter(item => item.day);
+      let daily = state.days.map(day => ({ day, total: 0 }));
+      if (operationDailySource.length) {
+        const byDay = operationDailySource.reduce((items, item) => {
+          if (item.operation && !selectedOperations.includes(item.operation)) return items;
+          const day = item.day;
+          if (!items[day]) items[day] = { day, total: 0 };
+          items[day].total += Number(item.hours || 0);
+          return items;
+        }, {});
+        daily = dailySource.length
+          ? dailySource.map(item => byDay[item.day] || { day: item.day, total: 0 })
+          : Object.values(byDay);
+      } else if (dailySource.length && state.filter === 'ALL') {
+        daily = dailySource.map(item => ({ day: item.day, total: Number(item.hours || 0) }));
+      }
+      const taskTypes = (source.taskTypes || [])
+        .filter(item => item && item.code)
+        .filter(item => !item.operation || state.filter === 'ALL' || selectedOperations.includes(item.operation))
+        .map(item => ({
+          code: String(item.code || '').trim(),
+          operation: item.operation || '',
+          count: Number(item.count || 0),
+          hours: Number(item.hours || 0)
+        }))
+        .filter(item => item.count > 0)
+        .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
+      const taskTypesByAdvisor = (source.taskTypesByAdvisor || [])
+        .filter(item => item && item.code && item.advisor)
+        .filter(item => !item.operation || state.filter === 'ALL' || selectedOperations.includes(item.operation))
+        .map(item => ({
+          advisor: String(item.advisor || '').trim(),
+          code: String(item.code || '').trim(),
+          operation: item.operation || '',
+          count: Number(item.count || 0),
+          hours: Number(item.hours || 0)
+        }))
+        .filter(item => item.count > 0);
+      const needsOperationDailyReload = !operationDailySource.length && state.filter !== 'ALL' && dailySource.length > 0;
+      return { rows, hours, amount, monthlyPlan, advisorPlan, advisorPlanToDate, missing, needDay, forecast, forecastDiff, daily, taskTypes, taskTypesByAdvisor };
+    }
+
+    function render() {
+      const data = model();
+      if (!state.serviceAdvisors) state.serviceAdvisors = { advisors: [], daily: [] };
+      document.getElementById('meta').textContent = `${state.monthName}, stav k ${state.reportDate}, aktualizované ${state.updatedAt || '-'}`;
+      document.getElementById('kpiPlan').textContent = `${fmt(data.monthlyPlan, 0)} h`;
+      document.getElementById('kpiPlanSub').textContent = state.filter === 'ALL' ? 'všetky vybrané prevádzky' : `prevádzka ${state.filter}`;
+      document.getElementById('kpiActual').textContent = `${fmt(data.actual)} h`;
+      const missingKpi = document.getElementById('kpiMissing');
+      const missingLabel = missingKpi.previousElementSibling;
+      const missingStatus = missingKpi.closest('.kpi').querySelector('.status');
+      missingLabel.textContent = data.missing !== null && data.missing <= 0 ? 'Nad planom' : 'Chyba do planu';
+      missingKpi.textContent = data.missing === null ? '-' : `${fmt(Math.abs(data.missing))} h`;
+      missingStatus.textContent = data.missing !== null && data.missing <= 0 ? 'splnene' : 'dorovnat';
+      missingStatus.className = `status ${data.missing !== null && data.missing <= 0 ? 'ok' : 'watch'}`;
+      document.getElementById('kpiNeedDay').textContent = data.missing !== null && data.missing <= 0 ? 'splnene' : data.needDay === null ? '-' : `${fmt(data.needDay)} h`;
+      document.getElementById('kpiNeedDaySub').textContent = `na ${state.remainingDays} zostávajúcich pracovných dní`;
+      document.getElementById('kpiNeedStatus').textContent = data.needDay === null ? 'chýba plán' : data.needDay > data.capacityToDate / data.elapsedDays ? 'vyššie tempo' : 'v tempe';
+      document.getElementById('kpiNeedStatus').className = `status ${data.needDay === null ? 'watch' : data.needDay > data.capacityToDate / data.elapsedDays ? 'risk' : 'ok'}`;
+      if (data.missing !== null && data.missing <= 0) {
+        document.getElementById('kpiNeedStatus').textContent = 'splnene';
+        document.getElementById('kpiNeedStatus').className = 'status ok';
+      }
+      document.getElementById('kpiProductivity').textContent = pct(data.productivity);
+      const capacityLoss = data.opRows.reduce((sum, row) => sum + Number(row.capacityLoss || 0), 0);
+      document.getElementById('kpiProductivitySub').textContent = `${fmt(data.actual)} h / ${fmt(data.capacityToDate)} h dostupnej kapacity, neprítomnosti -${fmt(capacityLoss)} h`;
+      document.getElementById('kpiProductivityStatus').textContent = data.productivity >= 85 ? 'v cieli' : data.productivity >= 70 ? 'sledovať' : 'riziko';
+      document.getElementById('kpiProductivityStatus').className = `status ${data.productivity >= 85 ? 'ok' : data.productivity >= 70 ? 'watch' : 'risk'}`;
+      document.getElementById('kpiEfficiency').textContent = data.efficiency === null ? '-' : pct(data.efficiency);
+      document.getElementById('kpiEfficiencySub').textContent = data.efficiency === null ? 'plán nie je nastavený' : `${fmt(data.actual)} h / ${fmt(data.plannedToDate)} h plán k dátumu`;
+      document.getElementById('kpiEfficiencyStatus').textContent = data.efficiency === null ? 'chýba plán' : data.efficiency >= 100 ? 'v pláne' : data.efficiency >= 90 ? 'sledovať' : 'pod plánom';
+      document.getElementById('kpiEfficiencyStatus').className = `status ${data.efficiency === null ? 'watch' : data.efficiency >= 100 ? 'ok' : data.efficiency >= 90 ? 'watch' : 'risk'}`;
+      document.getElementById('kpiRemaining').textContent = state.remainingDays;
+      renderOperationCards(data);
+      renderAbsenceCapacitySummary(data);
+      renderMonthCompare(data);
+      renderForecastRows(data);
+      renderOperationChart(data);
+      renderGroupStatus(data);
+      renderFulfillmentPanels(data);
+      renderNotes(data);
+      renderPersonMonthCompare(data);
+      renderPeople(data);
+      renderDailyChart(data);
+      renderProgressChart(data);
+      renderTopPeople(data);
+      renderDailyPeople(data);
+      renderServiceAdvisors(data);
+      renderSettings();
+      renderEditRows();
+      syncInputs();
+    }
+
+    function renderOperationCards(data) {
+      document.getElementById('operationCards').innerHTML = data.opRows.map(row => {
+        const planLine = row.config.monthlyPlan ? `${fmt(row.actual)} h / ${fmt(row.config.monthlyPlan, 0)} h` : `${fmt(row.actual)} h, plán nenastavený`;
+        const progress = row.config.monthlyPlan ? row.progress : row.productivity;
+        const color = progress >= 85 ? 'green' : progress >= 70 ? 'amber' : '';
+        const need = row.missing !== null && row.missing <= 0 ? 'splnene' : row.needDay === null ? 'nastavit plan' : `${fmt(row.needDay)} h/deň`;
+        return `
+          <div class="panel operation">
+            <div class="operation-head">
+              <div>
+                <strong>${row.operation}</strong>
+                <div class="subvalue">${row.people.length} pracovníkov v reporte</div>
+              </div>
+              <span class="status ${row.productivity >= 85 ? 'ok' : row.productivity >= 70 ? 'watch' : 'risk'}">${pct(row.productivity)}</span>
+            </div>
+            <div>
+              <div class="label">Fakturované / plán</div>
+              <div class="value">${fmt(row.actual)} h</div>
+              <div class="subvalue">${planLine}</div>
+            </div>
+            <div class="bar"><div class="fill ${color}" style="width:${Math.max(0, Math.min(100, progress || 0))}%"></div></div>
+            <div class="subvalue">Potrebné tempo: ${need}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAbsenceCapacitySummary(data) {
+      const stats = absenceCapacityStats(data);
+      document.getElementById('absenceCapacitySummary').innerHTML = `
+        <div>
+          <strong>${stats.reportDays}</strong>
+          <span>pracovných dní v reporte</span>
+        </div>
+        <div>
+          <strong>${fmt(stats.workDays, 0)} dní / ${fmt(stats.workHours)} h</strong>
+          <span>pracovná kapacita spolu</span>
+        </div>
+        <div>
+          <strong>${fmt(stats.absenceDays, 0)} dní / ${fmt(stats.absenceHours)} h</strong>
+          <span>neprítomnosti spolu</span>
+        </div>
+        <div>
+          <strong>${fmt(stats.mechanics.absenceDays, 0)} dní / ${fmt(stats.mechanics.absenceHours)} h</strong>
+          <span>neprítomnosti mechanikov</span>
+        </div>
+        <div>
+          <strong>${fmt(stats.diagnostics.absenceDays, 0)} dní / ${fmt(stats.diagnostics.absenceHours)} h</strong>
+          <span>neprítomnosti diagnostikov</span>
+        </div>
+      `;
+    }
+
+    function renderMonthCompare(data) {
+      const container = document.getElementById('monthCompare');
+      if (!state.previousMonth) {
+        container.innerHTML = `<div class="subvalue">Predchádzajúci mesiac zatiaľ nie je uložený. Pri prvom načítaní júnových dát sa máj uloží ako porovnávací základ.</div>`;
+        return;
+      }
+
+      const rows = data.opRows.map(row => {
+        const previousActual = snapshotOperationActual(state.previousMonth, row.operation);
+        const previousPlan = state.previousMonth.operations?.[row.operation]?.monthlyPlan || 0;
+        const previousProgress = previousPlan ? previousActual / previousPlan * 100 : 0;
+        const diff = row.actual - previousActual;
+        return { operation: row.operation, actual: row.actual, plan: row.config.monthlyPlan, progress: row.progress, previousActual, previousPlan, previousProgress, diff };
+      });
+      if (state.filter === 'ALL') {
+        const actual = rows.reduce((sum, row) => sum + row.actual, 0);
+        const plan = rows.reduce((sum, row) => sum + Number(row.plan || 0), 0);
+        const previousActual = rows.reduce((sum, row) => sum + row.previousActual, 0);
+        const previousPlan = rows.reduce((sum, row) => sum + Number(row.previousPlan || 0), 0);
+        rows.push({
+          operation: 'Spolu',
+          actual,
+          plan,
+          progress: plan ? actual / plan * 100 : 0,
+          previousActual,
+          previousPlan,
+          previousProgress: previousPlan ? previousActual / previousPlan * 100 : 0,
+          diff: actual - previousActual,
+          isTotal: true
+        });
+      }
+
+      container.innerHTML = `
+        <div class="subvalue" style="margin-bottom:10px">Porovnanie voči: <strong>${state.previousMonth.monthName}</strong></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Prevádzka</th>
+                <th>Aktuálny mesiac</th>
+                <th>Predch. mesiac</th>
+                <th>Rozdiel hodín</th>
+                <th>Plnenie teraz</th>
+                <th>Plnenie predtým</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr class="${row.isTotal ? 'row-support' : ''}">
+                  <td><strong>${row.operation}</strong></td>
+                  <td>${fmt(row.actual)} h / ${fmt(row.plan, 0)} h</td>
+                  <td>${fmt(row.previousActual)} h / ${fmt(row.previousPlan, 0)} h</td>
+                  <td class="${row.diff >= 0 ? 'diag-label' : ''}">${row.diff >= 0 ? '+' : ''}${fmt(row.diff)} h</td>
+                  <td>${pct(row.progress || 0)}</td>
+                  <td>${pct(row.previousProgress || 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderForecastRows(data) {
+      const rows = data.opRows;
+      const totalActual = rows.reduce((sum, row) => sum + row.actual, 0);
+      const totalPlan = rows.reduce((sum, row) => sum + Number(row.config.monthlyPlan || 0), 0);
+      const totalAverageDay = rows.reduce((sum, row) => sum + row.averageDay, 0);
+      const totalForecast = rows.reduce((sum, row) => sum + row.forecast, 0);
+      const totalDiff = totalPlan ? totalForecast - totalPlan : null;
+      const tableRows = state.filter === 'ALL'
+        ? [...rows, { operation: 'Spolu', actual: totalActual, averageDay: totalAverageDay, forecast: totalForecast, forecastDiff: totalDiff, config: { monthlyPlan: totalPlan }, isTotal: true }]
+        : rows;
+
+      document.getElementById('forecastRows').innerHTML = tableRows.map(row => {
+        const diff = row.forecastDiff;
+        const statusClass = diff === null ? 'info' : diff >= 0 ? 'ok' : diff >= -50 ? 'watch' : 'risk';
+        const statusText = diff === null ? 'bez plánu' : diff >= 0 ? 'nad plánom' : 'pod plánom';
+        return `
+          <tr class="${row.isTotal ? 'row-support' : ''}">
+            <td><strong>${row.operation}</strong></td>
+            <td>${fmt(row.actual)} h</td>
+            <td>${fmt(row.averageDay)} h/deň</td>
+            <td><strong>${fmt(row.forecast)} h</strong></td>
+            <td>${fmt(row.config.monthlyPlan, 0)} h</td>
+            <td class="${diff !== null && diff >= 0 ? 'diag-label' : ''}">${diff === null ? '-' : `${diff >= 0 ? '+' : ''}${fmt(diff)} h`}</td>
+            <td><span class="status ${statusClass}">${statusText}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderOperationChart(data) {
+      const width = 720;
+      const height = 300;
+      const margin = { top: 18, right: 26, bottom: 42, left: 58 };
+      const chartW = width - margin.left - margin.right;
+      const chartH = height - margin.top - margin.bottom;
+      const max = Math.max(1, ...data.opRows.map(row => row.actual)) * 1.18;
+      const bars = data.opRows.map((row, index) => {
+        const x = margin.left + index * (chartW / data.opRows.length) + 28;
+        const barW = chartW / data.opRows.length - 56;
+        const h = chartH * row.actual / max;
+        const y = margin.top + chartH - h;
+        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="5" fill="#006bb6"></rect>
+          <text x="${x + barW / 2}" y="${y - 8}" text-anchor="middle" class="chart-value">${fmt(row.actual)}</text>
+          <text x="${x + barW / 2}" y="${height - 15}" text-anchor="middle" class="chart-text">${row.operation}</text>`;
+      }).join('');
+      document.getElementById('operationChart').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Porovnanie prevádzok">
+          ${[0, .25, .5, .75, 1].map(t => {
+            const y = margin.top + chartH * t;
+            const val = max * (1 - t);
+            return `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="gridline"></line><text x="8" y="${y + 4}" class="chart-small">${fmt(val, 0)}</text>`;
+          }).join('')}
+          ${bars}
+          <line x1="${margin.left}" y1="${margin.top + chartH}" x2="${width - margin.right}" y2="${margin.top + chartH}" class="axis"></line>
+        </svg>
+      `;
+    }
+
+    function renderGroupStatus(data) {
+      const groups = [
+        { type: 'mechanic', title: 'Mechanici' },
+        { type: 'diagnostic', title: 'Diagnostici' }
+      ].map(group => {
+        const rows = data.personRows.filter(person => person.type === group.type);
+        const actual = rows.reduce((sum, person) => sum + person.actual, 0);
+        const plan = rows.reduce((sum, person) => sum + Number(person.plan || 0), 0);
+        const capacity = rows.reduce((sum, person) => sum + Number(person.personCapacity || 0), 0);
+        const progress = plan ? actual / plan * 100 : null;
+        const productivity = capacity ? actual / capacity * 100 : 0;
+        const missing = plan ? plan - actual : null;
+        return { ...group, actual, plan, productivity, progress, missing };
+      });
+
+      document.getElementById('groupStatus').innerHTML = groups.map(group => {
+        const width = group.progress === null ? 0 : Math.max(0, Math.min(100, group.progress));
+        const color = group.progress >= 100 ? 'green' : group.progress >= 80 ? 'amber' : '';
+        return `
+          <div style="margin-bottom:18px">
+            <div class="operation-head" style="margin-bottom:8px">
+              <strong>${group.title}</strong>
+              <span class="subvalue">${fmt(group.actual)} h / ${fmt(group.plan, 1)} h</span>
+            </div>
+            <div class="bar"><div class="fill ${color}" style="width:${width}%"></div></div>
+            <div class="subvalue">
+              ${group.progress === null ? 'plan nenastaveny' : `${pct(group.progress)} planu, produktivita ${pct(group.productivity)}, ${remainingGapText(group.missing)}`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderFulfillmentPanels(data) {
+      const productiveRows = data.personRows.filter(person => person.type !== 'support' && person.plan);
+      const topRows = [...productiveRows]
+        .sort((a, b) => b.actual - a.actual)
+        .slice(0, 6);
+      const maxActual = Math.max(1, ...topRows.map(row => row.actual));
+
+      document.getElementById('topFulfillment').innerHTML = topRows.map(row => {
+        const ratio = row.actual / maxActual * 100;
+        const color = row.planProgress >= 100 ? 'green' : row.planProgress >= 80 ? 'amber' : '';
+        return `
+          <div class="mini-row">
+            <span>${row.name}</span>
+            <div class="bar"><div class="fill ${color}" style="width:${Math.max(0, Math.min(100, ratio))}%"></div></div>
+            <strong style="text-align:right">${fmt(row.actual)} h</strong>
+          </div>
+        `;
+      }).join('');
+
+      const needRows = [...productiveRows]
+        .filter(row => row.needDay !== null && row.needDay > 0)
+        .sort((a, b) => b.needDay - a.needDay)
+        .slice(0, 6);
+      const maxNeed = Math.max(1, ...needRows.map(row => row.needDay));
+      document.getElementById('biggestNeed').innerHTML = needRows.map(row => `
+        <div class="mini-row">
+          <span>${row.name}</span>
+          <div class="bar"><div class="fill red" style="width:${Math.max(0, Math.min(100, row.needDay / maxNeed * 100))}%"></div></div>
+          <strong style="text-align:right">${fmt(row.needDay)}<br><small>h/deň</small></strong>
+        </div>
+      `).join('');
+    }
+
+    function renderNotes(data) {
+      const sorted = [...data.opRows].sort((a, b) => b.actual - a.actual);
+      const missingPlans = data.opRows.filter(row => !row.config.monthlyPlan).map(row => row.operation);
+      const scope = state.filter === 'ALL' ? 'PKW prevádzok' : `prevádzky ${state.filter}`;
+      const notes = [
+        state.filter === 'ALL' ? `Najvyšší výkon má ${sorted[0].operation}: ${fmt(sorted[0].actual)} h.` : `Zobrazená je iba prevádzka ${state.filter}: ${fmt(data.actual)} h.`,
+        `Celková produktivita ${scope} je ${pct(data.productivity)} po odpočítaní dovoleniek a neprítomností za ${data.elapsedDays} pracovných dní.`,
+        `Mesačný plán v tomto výbere je ${fmt(data.opRows.reduce((sum, row) => sum + row.config.monthlyPlan, 0), 0)} h.`
+      ];
+      if (missingPlans.length) notes.push(`Pre ${missingPlans.join(', ')} treba doplniť mesačný plán, aby sa zobrazovalo chýba do plánu a potrebné tempo.`);
+      notes.push(`Zostáva ${state.remainingDays} pracovných dní do konca mesiaca.`);
+      document.getElementById('notes').innerHTML = notes.map(note => `<li>${note}</li>`).join('');
+    }
+
+    function renderPeople(data) {
+      const rows = data.personRows
+        .sort((a, b) => a.operation.localeCompare(b.operation) || b.actual - a.actual);
+      document.getElementById('peopleRows').innerHTML = rows.map(person => {
+        const previousActual = previousPersonActual(person);
+        const diff = previousActual === null ? null : person.actual - previousActual;
+        return `
+          <tr class="${person.type === 'diagnostic' ? 'row-diagnostic' : person.type === 'support' ? 'row-support' : ''}">
+            <td>${person.name}</td>
+            <td>${person.operation}</td>
+            <td class="${person.type === 'diagnostic' ? 'diag-label' : ''}">${person.role || (person.type === 'diagnostic' ? 'Diagnostik' : person.type === 'mechanic' ? 'Mechanik' : 'Podpora')}</td>
+            <td>${absenceSummary(person)}</td>
+            <td>${fmt(person.actual)} h</td>
+            <td>${previousActual === null ? '-' : `${fmt(previousActual)} h`}</td>
+            <td class="${diff !== null && diff >= 0 ? 'diag-label' : ''}">${diff === null ? '-' : `${diff >= 0 ? '+' : ''}${fmt(diff)} h`}</td>
+            <td>${pct(person.productivity)}</td>
+            <td>${person.planProgress === null ? '-' : pct(person.planProgress)}</td>
+            <td>${person.plan === null ? '-' : `${fmt(person.plan)} h`}</td>
+            <td>${remainingGapText(person.missing)}</td>
+            <td>${person.missing !== null && person.missing <= 0 ? 'splnene' : person.needDay === null ? '-' : `${fmt(person.needDay)} h`}</td>
+            <td>${statusBadge(person)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPersonMonthCompare(data) {
+      const container = document.getElementById('personMonthCompare');
+      if (!state.previousMonth) {
+        container.innerHTML = `<div class="subvalue">Predchádzajúci mesiac zatiaľ nie je uložený.</div>`;
+        return;
+      }
+
+      const previousDays = Math.max(1, (state.previousMonth.days || []).length || state.previousMonth.workDays || 1);
+      const rows = data.personRows
+        .filter(person => person.type !== 'support')
+        .map(person => {
+          const previousActual = previousPersonActual(person);
+          const currentAverage = data.elapsedDays ? person.actual / data.elapsedDays : 0;
+          const previousAverage = previousActual === null ? null : previousActual / previousDays;
+          const averageDiff = previousAverage === null ? null : currentAverage - previousAverage;
+          return { ...person, previousActual, currentAverage, previousAverage, averageDiff };
+        })
+        .sort((a, b) => {
+          if (a.averageDiff === null && b.averageDiff === null) return b.actual - a.actual;
+          if (a.averageDiff === null) return 1;
+          if (b.averageDiff === null) return -1;
+          return b.averageDiff - a.averageDiff;
+        });
+
+      container.innerHTML = `
+        <div class="subvalue" style="margin-bottom:10px">Porovnanie denného tempa voči: <strong>${state.previousMonth.monthName}</strong></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Meno</th>
+                <th>Prevádzka</th>
+                <th>Typ</th>
+                <th>Teraz</th>
+                <th>Teraz/deň</th>
+                <th>Predch. mesiac</th>
+                <th>Predtým/deň</th>
+                <th>Rozdiel tempa</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(person => {
+                const isUp = person.averageDiff !== null && person.averageDiff >= 0;
+                const trendText = person.averageDiff === null ? 'bez porovnania' : isUp ? 'vyššie tempo' : 'nižšie tempo';
+                const trendClass = person.averageDiff === null ? 'info' : isUp ? 'ok' : 'risk';
+                return `
+                  <tr class="${person.type === 'diagnostic' ? 'row-diagnostic' : ''}">
+                    <td>${person.name}</td>
+                    <td>${person.operation}</td>
+                    <td class="${person.type === 'diagnostic' ? 'diag-label' : ''}">${person.type === 'diagnostic' ? 'Diagnostik' : 'Mechanik'}</td>
+                    <td>${fmt(person.actual)} h</td>
+                    <td>${fmt(person.currentAverage)} h/deň</td>
+                    <td>${person.previousActual === null ? '-' : `${fmt(person.previousActual)} h`}</td>
+                    <td>${person.previousAverage === null ? '-' : `${fmt(person.previousAverage)} h/deň`}</td>
+                    <td class="${isUp ? 'diag-label' : ''}">${person.averageDiff === null ? '-' : `${person.averageDiff >= 0 ? '+' : ''}${fmt(person.averageDiff)} h/deň`}</td>
+                    <td><span class="status ${trendClass}">${trendText}</span></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function statusBadge(person) {
+      if (person.type === 'support') return '<span class="status info">mimo kapacity</span>';
+      if (person.plan === null) return '<span class="status watch">chýba plán</span>';
+      if (person.missing <= 0) return '<span class="status ok">splnené</span>';
+      if (person.needDay <= person.dailyCapacity) return '<span class="status ok">v tempe</span>';
+      if (person.needDay <= person.dailyCapacity * 1.15) return '<span class="status watch">sledovať</span>';
+      return '<span class="status risk">riziko</span>';
+    }
+
+    function renderDailyChart(data) {
+      const width = 760;
+      const height = 350;
+      const margin = { top: 34, right: 18, bottom: 54, left: 58 };
+      const chartW = width - margin.left - margin.right;
+      const chartH = height - margin.top - margin.bottom;
+      const dailyTarget = state.workDays ? data.monthlyPlan / state.workDays : 0;
+      const max = Math.max(1, dailyTarget, ...data.daily.map(day => day.total)) * 1.18;
+      const targetY = margin.top + chartH - chartH * dailyTarget / max;
+      const bars = data.daily.map((day, index) => {
+        const x = margin.left + index * (chartW / data.daily.length) + 4;
+        const barW = chartW / data.daily.length - 8;
+        const h = chartH * Math.max(0, day.total) / max;
+        const y = margin.top + chartH - h;
+        const isTargetMet = dailyTarget > 0 && day.total >= dailyTarget;
+        const color = isTargetMet ? '#148a50' : '#006bb6';
+        const label = fmt(day.total);
+        const labelX = x + barW / 2;
+        const labelY = Math.max(margin.top + 13, y - 8);
+        const labelW = Math.max(34, label.length * 7 + 14);
+        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" fill="${color}"></rect>
+          <rect x="${labelX - labelW / 2}" y="${labelY - 16}" width="${labelW}" height="20" rx="5" class="daily-label-bg"></rect>
+          <text x="${labelX}" y="${labelY}" text-anchor="middle" class="daily-value">${label}</text>
+          <text x="${labelX}" y="${height - 18}" text-anchor="middle" class="chart-small">${day.day}</text>`;
+      }).join('');
+      document.getElementById('dailyChart').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Denný výkon">
+          ${[0, .25, .5, .75, 1].map(t => {
+            const y = margin.top + chartH * t;
+            const val = max * (1 - t);
+            return `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="gridline"></line><text x="8" y="${y + 4}" class="chart-small">${fmt(val, 0)}</text>`;
+          }).join('')}
+          ${dailyTarget ? `<line x1="${margin.left}" y1="${targetY}" x2="${width - margin.right}" y2="${targetY}" stroke="#c87800" stroke-width="2" stroke-dasharray="6 6"></line>
+          <text x="${width - margin.right - 6}" y="${targetY - 6}" text-anchor="end" class="chart-value">cieľ ${fmt(dailyTarget)} h/deň</text>` : ''}
+          ${bars}
+          <line x1="${margin.left}" y1="${margin.top + chartH}" x2="${width - margin.right}" y2="${margin.top + chartH}" class="axis"></line>
+        </svg>
+      `;
+    }
+
+    function renderProgressChart(data) {
+      const width = 760;
+      const height = 320;
+      const margin = { top: 18, right: 18, bottom: 48, left: 58 };
+      const chartW = width - margin.left - margin.right;
+      const chartH = height - margin.top - margin.bottom;
+      const dailyTarget = state.workDays ? data.monthlyPlan / state.workDays : 0;
+      let running = 0;
+      const actualPoints = data.daily.map((day, index) => {
+        running += day.total;
+        return { day: day.day, value: running, index };
+      });
+      const targetPoints = data.daily.map((day, index) => ({ day: day.day, value: dailyTarget * (index + 1), index }));
+      const max = Math.max(1, data.monthlyPlan, ...actualPoints.map(point => point.value), ...targetPoints.map(point => point.value)) * 1.06;
+      const pointX = index => margin.left + (data.daily.length <= 1 ? chartW / 2 : index * chartW / (data.daily.length - 1));
+      const pointY = value => margin.top + chartH - chartH * value / max;
+      const actualPolyline = actualPoints.map(point => `${pointX(point.index)},${pointY(point.value)}`).join(' ');
+      const targetPolyline = targetPoints.map(point => `${pointX(point.index)},${pointY(point.value)}`).join(' ');
+      const markers = actualPoints.map((point, index) => {
+        const x = pointX(point.index);
+        const y = pointY(point.value);
+        const showLabel = data.daily.length <= 12 || index % 2 === 0 || index === data.daily.length - 1;
+        return `<circle cx="${x}" cy="${y}" r="5" fill="#006bb6"></circle>
+          ${showLabel ? `<text x="${x}" y="${y - 10}" text-anchor="middle" class="chart-value">${fmt(point.value, 0)}</text>` : ''}
+          <text x="${x}" y="${height - 16}" text-anchor="middle" class="chart-small">${point.day}</text>`;
+      }).join('');
+      document.getElementById('progressChart').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Čiara mesačného cieľa">
+          ${[0, .25, .5, .75, 1].map(t => {
+            const y = margin.top + chartH * t;
+            const val = max * (1 - t);
+            return `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="gridline"></line><text x="8" y="${y + 4}" class="chart-small">${fmt(val, 0)}</text>`;
+          }).join('')}
+          ${dailyTarget ? `<polyline points="${targetPolyline}" fill="none" stroke="#c87800" stroke-width="2" stroke-dasharray="6 6"></polyline>` : ''}
+          <polyline points="${actualPolyline}" fill="none" stroke="#006bb6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+          ${markers}
+          <line x1="${margin.left}" y1="${margin.top + chartH}" x2="${width - margin.right}" y2="${margin.top + chartH}" class="axis"></line>
+        </svg>
+      `;
+    }
+
+    function renderTopPeople(data) {
+      const rows = [...data.personRows].sort((a, b) => b.actual - a.actual).slice(0, 12);
+      const max = Math.max(1, ...rows.map(row => row.actual));
+      document.getElementById('topPeople').innerHTML = rows.map(row => `
+        <div class="mini-row">
+          <span>${row.name} <span class="label">(${row.operation})</span></span>
+          <div class="bar"><div class="fill ${row.actual / max > .75 ? 'green' : row.actual / max > .45 ? 'amber' : ''}" style="width:${Math.max(0, row.actual / max * 100)}%"></div></div>
+          <strong style="text-align:right">${fmt(row.actual)} h</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderDailyPeople(data) {
+      if (state.selectedDayIndex === undefined || state.selectedDayIndex >= state.days.length) {
+        state.selectedDayIndex = Math.max(0, state.days.length - 1);
+      }
+      const select = document.getElementById('dayDetailSelect');
+      select.innerHTML = state.days.map((day, index) => `<option value="${index}" ${index === state.selectedDayIndex ? 'selected' : ''}>${day}</option>`).join('');
+      select.onchange = event => {
+        state.selectedDayIndex = Number(event.target.value);
+        saveState();
+        render();
+      };
+
+      const rows = filteredPeople()
+        .filter(person => person.type !== 'support')
+        .map(person => {
+          const config = state.operations[person.operation];
+          const value = Number(person.values[state.selectedDayIndex] || 0);
+          const status = dayStatus(person, state.selectedDayIndex);
+          const dailyCapacity = personDailyCapacity(person);
+          const progress = dailyCapacity ? value / dailyCapacity * 100 : 0;
+          return { ...person, value, status, dailyCapacity, progress };
+        })
+        .sort((a, b) => Number(Boolean(b.status)) - Number(Boolean(a.status)) || b.value - a.value);
+      const max = Math.max(1, ...rows.map(row => Math.max(0, row.value)), ...rows.map(row => row.dailyCapacity));
+      const dayTotal = rows.reduce((sum, row) => sum + row.value, 0);
+      const activeCount = rows.filter(row => row.value !== 0).length;
+      const absenceCount = rows.filter(row => row.status).length;
+
+      document.getElementById('dailyPeople').innerHTML = `
+        <div class="summary" style="margin-bottom:12px">
+          <div><strong>${state.days[state.selectedDayIndex]}</strong><span> sledovaný deň</span></div>
+          <div><strong>${fmt(dayTotal)} h</strong><span> spolu</span></div>
+          <div><strong>${activeCount}</strong><span> aktívnych ľudí</span></div>
+          <div><strong>${absenceCount}</strong><span> PN / neprítomnosť</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Meno</th>
+                <th>Prevádzka</th>
+                <th>Typ</th>
+                <th>Výkon</th>
+                <th>Denný cieľ</th>
+                <th>Plnenie</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => {
+                const met = row.value >= row.dailyCapacity;
+                const color = met ? 'green' : row.progress >= 70 ? 'amber' : row.value < 0 ? 'red' : '';
+                const statusBadge = row.status
+                  ? `<span class="status risk">${row.status}</span>`
+                  : met ? '<span class="status ok">splnené</span>' : '<span class="status watch">nesplnené</span>';
+                return `
+                  <tr class="${row.type === 'diagnostic' ? 'row-diagnostic' : ''}">
+                    <td>${row.name}</td>
+                    <td>${row.operation}</td>
+                    <td>${row.type === 'diagnostic' ? 'Diagnostik' : 'Mechanik'}</td>
+                    <td><strong>${fmt(row.value)} h</strong></td>
+                    <td>${fmt(row.dailyCapacity)} h</td>
+                    <td>
+                      <div class="bar"><div class="fill ${color}" style="width:${Math.max(0, Math.min(100, row.progress))}%"></div></div>
+                      <small>${pct(row.progress)}</small>
+                    </td>
+                    <td>${statusBadge}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderServiceAdvisors(baseData) {
+      const data = serviceAdvisorModel(baseData);
+      const operationText = state.filter === 'ALL' ? 'T5P / MG' : state.filter;
+      document.getElementById('spOperation').textContent = operationText;
+      document.getElementById('spMonthlyPlan').textContent = `${fmt(data.monthlyPlan, 0)} h`;
+      document.getElementById('spAdvisorHours').textContent = `${fmt(data.hours)} h`;
+      document.getElementById('spAdvisorAmount').textContent = `${fmt(data.amount, 0)} EUR`;
+      document.getElementById('spMissing').textContent = data.missing === null ? '-' : `${fmt(Math.abs(data.missing))} h`;
+      document.getElementById('spMissingStatus').textContent = data.missing !== null && data.missing <= 0 ? 'splnené' : 'chýba';
+      document.getElementById('spMissingStatus').className = `status ${data.missing !== null && data.missing <= 0 ? 'ok' : 'watch'}`;
+      document.getElementById('spNeedDay').textContent = data.missing !== null && data.missing <= 0 ? 'splnené' : data.needDay === null ? '-' : `${fmt(data.needDay)} h`;
+      document.getElementById('spNeedDaySub').textContent = `na ${state.remainingDays} zostávajúcich pracovných dní`;
+      document.getElementById('spForecast').textContent = `${fmt(data.forecast)} h`;
+      document.getElementById('spForecastSub').textContent = data.forecastDiff === null ? 'plán nie je nastavený' : `${data.forecastDiff >= 0 ? '+' : ''}${fmt(data.forecastDiff)} h voči plánu`;
+      document.getElementById('spForecastStatus').textContent = data.forecastDiff === null ? 'bez plánu' : data.forecastDiff >= 0 ? 'nad plánom' : 'pod plánom';
+      document.getElementById('spForecastStatus').className = `status ${data.forecastDiff === null ? 'watch' : data.forecastDiff >= 0 ? 'ok' : 'risk'}`;
+
+      const topAdvisorRows = [...data.rows]
+        .filter(row => row.advisorPlan)
+        .sort((a, b) => (b.planProgress || 0) - (a.planProgress || 0) || b.hours - a.hours);
+      document.getElementById('spTopAdvisors').innerHTML = topAdvisorRows.length ? topAdvisorRows.map(row => {
+        const progress = row.planProgress || 0;
+        const color = progress >= 100 ? 'green' : progress >= 80 ? 'amber' : '';
+        return `
+          <div class="mini-row">
+            <span>${row.name}</span>
+            <div class="bar"><div class="fill ${color}" style="width:${Math.max(0, Math.min(100, progress))}%"></div></div>
+            <strong style="text-align:right">${pct(progress)}<br><small>${fmt(row.hours)} / ${fmt(row.advisorPlan)} h</small><br><small>k dátumu ${row.progressToDate === null ? '-' : pct(row.progressToDate)} (${fmt(row.hours)} / ${fmt(row.planToDate)} h)</small></strong>
+          </div>
+        `;
+      }).join('') : '<div class="subvalue">Nahraj SP súbor alebo pridaj SP tabuľku do hlavného Excelu.</div>';
+
+      const spTaskTypeTotal = (data.taskTypes || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+      const spTaskTypeElement = document.getElementById('spTaskTypeRows');
+      if (spTaskTypeElement) {
+        spTaskTypeElement.innerHTML = spTaskTypeTotal ? (data.taskTypes || []).map(item => {
+          const share = Number(item.count || 0) / spTaskTypeTotal * 100;
+          return `
+            <tr>
+              <td><strong>${item.code}</strong></td>
+              <td>${item.operation || operationText}</td>
+              <td>${fmt(item.count, 0)}</td>
+              <td>
+                <div class="bar"><div class="fill" style="width:${Math.max(0, Math.min(100, share))}%"></div></div>
+                <small>${pct(share)}</small>
+              </td>
+              <td>${fmt(item.hours)} h</td>
+            </tr>
+          `;
+        }).join('') : '<tr><td colspan="5">V nahratých SP dátach nie je dostupný stĺpec Kód typu úlohy.</td></tr>';
+      }
+
+      const spTaskTypeAdvisorTotals = (data.taskTypesByAdvisor || []).reduce((items, item) => {
+        items[item.advisor] = (items[item.advisor] || 0) + Number(item.count || 0);
+        return items;
+      }, {});
+      const spTaskTypeAdvisorElement = document.getElementById('spTaskTypeAdvisorRows');
+      if (spTaskTypeAdvisorElement) {
+        spTaskTypeAdvisorElement.innerHTML = (data.taskTypesByAdvisor || []).length ? (data.taskTypesByAdvisor || []).map(item => {
+          const share = spTaskTypeAdvisorTotals[item.advisor] ? Number(item.count || 0) / spTaskTypeAdvisorTotals[item.advisor] * 100 : 0;
+          return `
+            <tr>
+              <td><strong>${item.advisor}</strong></td>
+              <td>${item.code}</td>
+              <td>${item.operation || operationText}</td>
+              <td>${fmt(item.count, 0)}</td>
+              <td>
+                <div class="bar"><div class="fill" style="width:${Math.max(0, Math.min(100, share))}%"></div></div>
+                <small>${pct(share)}</small>
+              </td>
+              <td>${fmt(item.hours)} h</td>
+            </tr>
+          `;
+        }).join('') : '<tr><td colspan="6">Pre sledovaných technikov nie sú dostupné dáta podľa stĺpca Kód typu úlohy.</td></tr>';
+      }
+
+      document.getElementById('spAdvisorRows').innerHTML = data.rows.length ? data.rows.map(row => {
+        const share = data.hours ? row.hours / data.hours * 100 : 0;
+        return `
+          <tr>
+            <td><strong>${row.name}</strong></td>
+            <td>${row.operation || '-'}</td>
+            <td>${fmt(row.hours)} h</td>
+            <td>${fmt(row.amount, 0)} EUR</td>
+            <td>${row.rate ? `${fmt(row.rate, 0)} EUR/h` : '-'}</td>
+            <td>
+              <div class="bar"><div class="fill" style="width:${Math.max(0, Math.min(100, share))}%"></div></div>
+              <small>${pct(share)}</small>
+            </td>
+            <td><span class="status ${share >= 25 ? 'ok' : share >= 10 ? 'watch' : 'info'}">${share >= 25 ? 'ťahúň' : share >= 10 ? 'silný podiel' : 'podiel'}</span></td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="7">Zatiaľ nie sú nahraté dáta servisných poradcov.</td></tr>';
+
+      renderAdvisorDailyChart(data);
+      renderAdvisorProgressChart(data);
+      renderServiceAdvisorPrintReport(data);
+    }
+
+    function renderServiceAdvisorPrintReport(data) {
+      const operationText = state.filter === 'ALL' ? 'T5P / MG' : state.filter;
+      const topAdvisor = [...data.rows]
+        .filter(row => row.advisorPlan)
+        .sort((a, b) => (b.planProgress || 0) - (a.planProgress || 0) || b.hours - a.hours)[0] || data.rows[0];
+      const forecastText = data.forecastDiff === null
+        ? 'Plán nie je nastavený.'
+        : data.forecastDiff >= 0
+          ? `Pri aktuálnom tempe je odhad nad plánom o ${fmt(data.forecastDiff)} h.`
+          : `Pri aktuálnom tempe je odhad pod plánom o ${fmt(Math.abs(data.forecastDiff))} h.`;
+      const paceText = data.missing !== null && data.missing <= 0
+        ? 'Mesačný cieľ je podľa SP dát splnený alebo prekročený.'
+        : data.needDay === null
+          ? 'Na výpočet dennej potreby chýba plán alebo zostávajúce pracovné dni.'
+          : `Na splnenie plánu treba denne fakturovať ešte ${fmt(data.needDay)} h.`;
+      const advisorRows = data.rows.length ? data.rows.map((row, index) => {
+        const share = data.hours ? row.hours / data.hours * 100 : 0;
+        return `
+          <tr>
+            <td>${index + 1}. ${row.name}</td>
+            <td>${row.operation || operationText}</td>
+            <td>${fmt(row.hours)} h</td>
+            <td>${pct(share)}</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="4">Zatiaľ nie sú nahraté dáta servisných poradcov.</td></tr>';
+      const planRows = [...data.rows]
+        .filter(row => row.advisorPlan)
+        .sort((a, b) => (b.planProgress || 0) - (a.planProgress || 0) || b.hours - a.hours);
+      const planBars = planRows.length ? planRows.map(row => {
+        const progress = row.planProgress || 0;
+        return `
+          <div class="print-plan-row">
+            <div class="print-plan-name">${row.name}</div>
+            <div class="print-plan-track"><div class="print-plan-fill" style="width:${Math.max(0, Math.min(100, progress))}%"></div></div>
+            <div class="print-plan-value">${pct(progress)}<small>${fmt(row.hours)} / ${fmt(row.advisorPlan)} h</small><small>k dátumu ${row.progressToDate === null ? '-' : pct(row.progressToDate)}</small></div>
+          </div>
+        `;
+      }).join('') : '<div class="subvalue">Pre vybraných SP nie je dostupný plán alebo dáta.</div>';
+      const taskTypeTotal = (data.taskTypes || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+      const taskTypeRows = taskTypeTotal ? (data.taskTypes || []).map(item => {
+        const share = Number(item.count || 0) / taskTypeTotal * 100;
+        return `
+          <tr>
+            <td>${item.code}</td>
+            <td>${item.operation || operationText}</td>
+            <td>${fmt(item.count, 0)}</td>
+            <td>${pct(share)}</td>
+            <td>${fmt(item.hours)} h</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="5">V nahratých SP dátach nie je dostupný stĺpec Kód typu úlohy.</td></tr>';
+      const taskTypeAdvisorTotals = (data.taskTypesByAdvisor || []).reduce((items, item) => {
+        items[item.advisor] = (items[item.advisor] || 0) + Number(item.count || 0);
+        return items;
+      }, {});
+      const taskTypeAdvisorRows = (data.taskTypesByAdvisor || []).length ? (data.taskTypesByAdvisor || []).map(item => {
+        const share = taskTypeAdvisorTotals[item.advisor] ? Number(item.count || 0) / taskTypeAdvisorTotals[item.advisor] * 100 : 0;
+        return `
+          <tr>
+            <td>${item.advisor}</td>
+            <td>${item.code}</td>
+            <td>${item.operation || operationText}</td>
+            <td>${fmt(item.count, 0)}</td>
+            <td>${pct(share)}</td>
+            <td>${fmt(item.hours)} h</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="6">Pre sledovaných technikov nie sú dostupné dáta podľa stĺpca Kód typu úlohy.</td></tr>';
+      const dailyTarget = state.workDays ? data.monthlyPlan / state.workDays : null;
+      const dailyRows = data.daily.filter(day => Number(day.total || 0) !== 0).length
+        ? data.daily.map(day => {
+          const diff = dailyTarget === null ? null : Number(day.total || 0) - dailyTarget;
+          const diffText = diff === null ? '-' : `${diff >= 0 ? '+' : '-'}${fmt(Math.abs(diff))} h`;
+          const diffColor = diff === null ? '#667085' : diff >= 0 ? '#14804a' : '#b42318';
+          return `
+            <tr>
+              <td>${day.day}</td>
+              <td>${fmt(day.total)} h</td>
+              <td>${dailyTarget === null ? '-' : `${fmt(dailyTarget)} h`}</td>
+              <td style="color:${diffColor}; font-weight:800">${diffText}</td>
+              <td>${dailyTarget !== null && day.total >= dailyTarget ? 'splnené' : 'sledovať'}</td>
+            </tr>
+          `;
+        }).join('')
+        : '<tr><td colspan="5">Denné členenie nie je v nahratom SP súbore. Zostava používa súhrn po poradcoch.</td></tr>';
+
+      document.getElementById('spPrintReport').innerHTML = `
+        <div class="print-header">
+          <div>
+            <h1 class="print-title">Ranný report servisných poradcov</h1>
+            <div class="subvalue">Obdobie: <strong>${reportPeriodText()}</strong> | Prevádzka: <strong>${operationText}</strong></div>
+          </div>
+          <div class="print-meta">
+            Stav k: <strong>${state.reportDate || '-'}</strong><br>
+            Aktualizované: <strong>${state.updatedAt || '-'}</strong><br>
+            Zostáva pracovných dní: <strong>${state.remainingDays}</strong>
+          </div>
+        </div>
+
+        <div class="print-kpis">
+          <div class="print-kpi"><span>Mesačný plán dielne</span><strong>${fmt(data.monthlyPlan, 0)} h</strong></div>
+          <div class="print-kpi"><span>Fakturované SP</span><strong>${fmt(data.hours)} h</strong></div>
+          <div class="print-kpi"><span>Chýba do plánu</span><strong>${data.missing === null ? '-' : `${fmt(Math.max(0, data.missing))} h`}</strong></div>
+          <div class="print-kpi"><span>Potrebné denne</span><strong>${data.missing !== null && data.missing <= 0 ? 'splnené' : data.needDay === null ? '-' : `${fmt(data.needDay)} h`}</strong></div>
+          <div class="print-kpi"><span>Odhad koniec mesiaca</span><strong>${fmt(data.forecast)} h</strong></div>
+          <div class="print-kpi"><span>Plnenie plánu SP</span><strong>${topAdvisor ? topAdvisor.name : '-'}</strong></div>
+          <div class="print-kpi"><span>Najvyššie plnenie</span><strong>${topAdvisor && topAdvisor.planProgress !== null ? pct(topAdvisor.planProgress || 0) : '-'}</strong></div>
+        </div>
+
+        <div class="print-block">
+          <h2>Zhrnutie pre ranné odoslanie</h2>
+          <p style="margin:0; font-size:12px; line-height:1.5">${paceText} ${forecastText}</p>
+        </div>
+
+        <div class="print-block">
+          <h2>Plnenie plánu SP</h2>
+          <div class="print-plan-bars">${planBars}</div>
+        </div>
+
+        <div class="print-block">
+          <h2>Percentuálny podiel zákaziek podľa kódu typu úlohy</h2>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Kód typu úlohy</th>
+                <th>Prevádzka</th>
+                <th>Počet zákaziek</th>
+                <th>Podiel</th>
+                <th>Hodiny</th>
+              </tr>
+            </thead>
+            <tbody>${taskTypeRows}</tbody>
+          </table>
+        </div>
+
+
+        <div class="print-block">
+          <h2>Percentuálny podiel zákaziek podľa kódu typu úlohy po technikoch</h2>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Technik / SP</th>
+                <th>Kód typu úlohy</th>
+                <th>Prevádzka</th>
+                <th>Počet</th>
+                <th>Podiel u technika</th>
+                <th>Hodiny</th>
+              </tr>
+            </thead>
+            <tbody>${taskTypeAdvisorRows}</tbody>
+          </table>
+        </div>
+
+        <div class="print-block">
+          <h2>Servisní poradcovia - hodiny</h2>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Meno SP</th>
+                <th>Prevádzka</th>
+                <th>Hodiny</th>
+                <th>Podiel</th>
+              </tr>
+            </thead>
+            <tbody>${advisorRows}</tbody>
+          </table>
+        </div>
+
+        <div class="print-block">
+          <h2>Fakturované hodiny po dňoch</h2>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Deň</th>
+                <th>Fakturované</th>
+                <th>Denný cieľ</th>
+                <th>Strata / navýšenie</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody>${dailyRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderAdvisorDailyChart(data) {
+      const width = 760;
+      const height = 330;
+      const margin = { top: 34, right: 18, bottom: 54, left: 58 };
+      const chartW = width - margin.left - margin.right;
+      const chartH = height - margin.top - margin.bottom;
+      const dailyTarget = state.workDays ? data.monthlyPlan / state.workDays : 0;
+      const max = Math.max(1, dailyTarget, ...data.daily.map(day => day.total)) * 1.18;
+      const targetY = margin.top + chartH - chartH * dailyTarget / max;
+      const bars = data.daily.map((day, index) => {
+        const x = margin.left + index * (chartW / data.daily.length) + 4;
+        const barW = chartW / data.daily.length - 8;
+        const h = chartH * Math.max(0, day.total) / max;
+        const y = margin.top + chartH - h;
+        const labelX = x + barW / 2;
+        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" fill="${day.total >= dailyTarget ? '#14804a' : '#006bb6'}"></rect>
+          <text x="${labelX}" y="${Math.max(margin.top + 13, y - 8)}" text-anchor="middle" class="chart-value">${fmt(day.total)}</text>
+          <text x="${labelX}" y="${height - 18}" text-anchor="middle" class="chart-small">${day.day}</text>`;
+      }).join('');
+      document.getElementById('spDailyChart').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Denné SP hodiny">
+          ${[0, .25, .5, .75, 1].map(t => {
+            const y = margin.top + chartH * t;
+            const val = max * (1 - t);
+            return `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="gridline"></line><text x="8" y="${y + 4}" class="chart-small">${fmt(val, 0)}</text>`;
+          }).join('')}
+          ${dailyTarget ? `<line x1="${margin.left}" y1="${targetY}" x2="${width - margin.right}" y2="${targetY}" stroke="#c87800" stroke-width="2" stroke-dasharray="6 6"></line>
+          <text x="${width - margin.right - 6}" y="${targetY - 6}" text-anchor="end" class="chart-value">cieľ ${fmt(dailyTarget)} h/deň</text>` : ''}
+          ${bars}
+          <line x1="${margin.left}" y1="${margin.top + chartH}" x2="${width - margin.right}" y2="${margin.top + chartH}" class="axis"></line>
+        </svg>
+      `;
+    }
+
+    function renderAdvisorProgressChart(data) {
+      const width = 760;
+      const height = 310;
+      const margin = { top: 18, right: 18, bottom: 48, left: 58 };
+      const chartW = width - margin.left - margin.right;
+      const chartH = height - margin.top - margin.bottom;
+      const dailyTarget = state.workDays ? data.monthlyPlan / state.workDays : 0;
+      let running = 0;
+      const actualPoints = data.daily.map((day, index) => {
+        running += day.total;
+        return { day: day.day, value: running, index };
+      });
+      const targetPoints = data.daily.map((day, index) => ({ value: dailyTarget * (index + 1), index }));
+      const max = Math.max(1, data.monthlyPlan, ...actualPoints.map(point => point.value), ...targetPoints.map(point => point.value)) * 1.06;
+      const pointX = index => margin.left + (data.daily.length <= 1 ? chartW / 2 : index * chartW / (data.daily.length - 1));
+      const pointY = value => margin.top + chartH - chartH * value / max;
+      document.getElementById('spProgressChart').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="SP cieľ">
+          ${[0, .25, .5, .75, 1].map(t => {
+            const y = margin.top + chartH * t;
+            const val = max * (1 - t);
+            return `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="gridline"></line><text x="8" y="${y + 4}" class="chart-small">${fmt(val, 0)}</text>`;
+          }).join('')}
+          ${dailyTarget ? `<polyline points="${targetPoints.map(point => `${pointX(point.index)},${pointY(point.value)}`).join(' ')}" fill="none" stroke="#c87800" stroke-width="2" stroke-dasharray="6 6"></polyline>` : ''}
+          <polyline points="${actualPoints.map(point => `${pointX(point.index)},${pointY(point.value)}`).join(' ')}" fill="none" stroke="#006bb6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+          ${actualPoints.map((point, index) => `<circle cx="${pointX(point.index)}" cy="${pointY(point.value)}" r="5" fill="#006bb6"></circle><text x="${pointX(point.index)}" y="${height - 16}" text-anchor="middle" class="chart-small">${point.day}</text>${index === actualPoints.length - 1 ? `<text x="${pointX(point.index)}" y="${pointY(point.value) - 10}" text-anchor="middle" class="chart-value">${fmt(point.value, 0)}</text>` : ''}`).join('')}
+          <line x1="${margin.left}" y1="${margin.top + chartH}" x2="${width - margin.right}" y2="${margin.top + chartH}" class="axis"></line>
+        </svg>
+      `;
+    }
+
+    function renderEditRows() {
+      const rows = filteredPeople();
+      document.getElementById('editHead').innerHTML = `
+        <tr>
+          <th>Meno</th>
+          <th>Zaradenie</th>
+          <th>Prevádzka</th>
+          ${state.days.map(day => `<th>${day}</th>`).join('')}
+          <th>Spolu</th>
+        </tr>
+      `;
+      document.getElementById('editRows').innerHTML = rows.map(person => {
+        const personIndex = state.people.indexOf(person);
+        return `
+          <tr class="${person.type === 'diagnostic' ? 'row-diagnostic' : person.type === 'support' ? 'row-support' : ''}">
+            <td>${person.name}</td>
+            <td>${person.role || (person.type === 'diagnostic' ? 'Diagnostik' : person.type === 'mechanic' ? 'Mechanik' : 'Podpora')}</td>
+            <td>${person.operation}</td>
+            ${state.days.map((day, dayIndex) => `
+              <td><input class="number hour-input" data-person="${personIndex}" data-day="${dayIndex}" type="number" step="0.1" value="${Number(person.values[dayIndex] || 0)}"></td>
+            `).join('')}
+            <td><strong>${fmt(total(person))} h</strong></td>
+          </tr>
+        `;
+      }).join('');
+      document.querySelectorAll('.hour-input').forEach(input => {
+        input.addEventListener('input', event => {
+          const personIndex = Number(event.target.dataset.person);
+          const dayIndex = Number(event.target.dataset.day);
+          state.people[personIndex].values[dayIndex] = Number(event.target.value || 0);
+          saveState();
+          render();
+        });
+      });
+    }
+
+    function renderSettings() {
+      document.getElementById('settingsRows').innerHTML = operations().map(operation => {
+        const config = state.operations[operation];
+        const dailyCapacity = config.mechanics * 8 + config.diagnostics * 8 * config.diagnosticFactor;
+        return `
+          <tr>
+            <td><strong>${operation}</strong></td>
+            <td><input data-operation="${operation}" data-key="monthlyPlan" type="number" step="0.1" value="${config.monthlyPlan}"></td>
+            <td><input data-operation="${operation}" data-key="mechanics" type="number" step="0.1" value="${config.mechanics}"></td>
+            <td><input data-operation="${operation}" data-key="diagnostics" type="number" step="0.1" value="${config.diagnostics}"></td>
+            <td><input data-operation="${operation}" data-key="diagnosticFactor" type="number" step="0.01" value="${config.diagnosticFactor}"></td>
+            <td>${fmt(dailyCapacity)} h/deň</td>
+          </tr>
+        `;
+      }).join('');
+      document.querySelectorAll('#settingsRows input').forEach(input => {
+        input.addEventListener('input', event => {
+          const operation = event.target.dataset.operation;
+          const key = event.target.dataset.key;
+          state.operations[operation][key] = Number(event.target.value || 0);
+          saveState();
+          render();
+        });
+      });
+    }
+
+    function syncInputs() {
+      document.getElementById('reportDate').value = state.reportDate;
+      document.getElementById('updateReportDate').value = state.reportDate;
+      document.getElementById('workDays').value = state.workDays;
+      document.getElementById('updateWorkDays').value = state.workDays;
+      document.getElementById('remainingDays').value = state.remainingDays;
+      document.getElementById('updateRemainingDays').value = state.remainingDays;
+      document.getElementById('operationFilter').value = state.filter;
+      document.getElementById('operationFilterTop').value = state.filter;
+    }
+
+    document.querySelectorAll('.nav button').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.nav button').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.screen').forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(button.dataset.screen).classList.add('active');
+      });
+    });
+
+    ['reportDate', 'workDays', 'remainingDays'].forEach(id => {
+      document.getElementById(id).addEventListener('input', event => {
+        state[id] = id === 'reportDate' ? event.target.value : Number(event.target.value || 0);
+        saveState();
+        render();
+      });
+    });
+
+    [
+      ['updateReportDate', 'reportDate'],
+      ['updateWorkDays', 'workDays'],
+      ['updateRemainingDays', 'remainingDays']
+    ].forEach(([inputId, stateKey]) => {
+      document.getElementById(inputId).addEventListener('input', event => {
+        state[stateKey] = stateKey === 'reportDate' ? event.target.value : Number(event.target.value || 0);
+        saveState();
+        render();
+      });
+    });
+
+    document.getElementById('operationFilter').addEventListener('change', event => {
+      state.filter = event.target.value;
+      saveState();
+      render();
+    });
+
+    document.getElementById('operationFilterTop').addEventListener('change', event => {
+      state.filter = event.target.value;
+      saveState();
+      render();
+    });
+
+    async function redirectToAssistantServerIfAvailable() {
+      return false;
+    }
+
+    async function runExcelUpdater() {
+      const status = document.getElementById('excelUpdateStatus');
+      if (status) {
+        status.textContent = 'Spúšťam aktualizáciu z Excelu...';
+      }
+
+      if (await redirectToAssistantServerIfAvailable()) {
+        return;
+      }
+
+      if (true) {
+        try {
+          const response = await fetch(serverUpdateUrl, { method: 'POST', cache: 'no-store' });
+          const result = await response.json();
+          if (!response.ok || !result.ok) {
+            throw new Error(result.stderr || 'Aktualizácia sa nepodarila.');
+          }
+          if (status) {
+            status.textContent = 'Aktualizácia prebehla. Obnovujem stránku...';
+          }
+          window.location.reload();
+          return;
+        } catch (error) {
+          if (status) {
+            status.textContent = `Aktualizácia sa nepodarila: ${error.message}`;
+          }
+          alert(`Aktualizácia sa nepodarila: ${error.message}`);
+          return;
+        }
+      }
+
+      if (status) {
+        status.textContent = 'GitHub verzia je statická. Dáta aktualizuj nahratím novej verzie index.html.';
+      }
+      alert('GitHub verzia je statická. Dáta aktualizuj nahratím novej verzie index.html.');
+    }
+
+    document.getElementById('refreshFromExcelBtn').addEventListener('click', runExcelUpdater);
+    document.getElementById('runExcelUpdateBtn').addEventListener('click', runExcelUpdater);
+
+    function applyPeopleUpload(data) {
+      const existingAdvisors = state.serviceAdvisors || { advisors: [], daily: [] };
+      state.monthName = data.monthName || state.monthName;
+      state.reportDate = data.reportDate || state.reportDate;
+      state.updatedAt = data.updatedAt || new Date().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      state.workDays = Number(data.workDays || state.workDays);
+      state.remainingDays = Number(data.remainingDays || 0);
+      state.operations = data.operations || state.operations;
+      state.days = data.days || state.days;
+      state.people = data.people || state.people;
+      state.totals = data.totals || state.totals;
+      state.serviceAdvisors = existingAdvisors;
+      state.selectedDayIndex = Math.min(Math.max(0, state.selectedDayIndex || 0), Math.max(0, state.days.length - 1));
+      if (state.filter !== 'ALL' && !state.operations[state.filter]) {
+        state.filter = 'ALL';
+      }
+      document.getElementById('operationFilterTop').value = state.filter;
+      const sideFilter = document.getElementById('operationFilter');
+      if (sideFilter) sideFilter.value = state.filter;
+    }
+
+    document.getElementById('peopleUploadBtn').addEventListener('click', async () => {
+      const input = document.getElementById('peopleUploadFile');
+      const status = document.getElementById('peopleUploadStatus');
+      const file = input.files && input.files[0];
+      if (!file) {
+        status.textContent = 'Vyber najprv Excel s dátami dielne.';
+        return;
+      }
+      status.textContent = 'Nahrávam a čítam dáta mechanikov a diagnostikov...';
+
+      if (await redirectToAssistantServerIfAvailable()) {
+        return;
+      }
+
+      try {
+        const body = new FormData();
+        body.append('file', file);
+        const response = await fetch(peopleUploadUrl, { method: 'POST', body });
+        const responseText = await response.text();
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          throw new Error('Lokálny server ešte nemá zapnuté nahratie dát dielne. Zatvor asistenta a otvor ho znovu cez spusti_pkw_asistenta.cmd.');
+        }
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'Nahratie sa nepodarilo.');
+        }
+        applyPeopleUpload(result.data || {});
+        saveState();
+        render();
+        const mechanics = state.people.filter(person => person.type === 'mechanic').length;
+        const diagnostics = state.people.filter(person => person.type === 'diagnostic').length;
+        status.textContent = `Načítané: ${mechanics} mechanikov a ${diagnostics} diagnostikov zo súboru ${result.filename}.`;
+      } catch (error) {
+        status.textContent = `Nahratie sa nepodarilo: ${error.message}`;
+      }
+    });
+
+    document.getElementById('peopleResetBtn').addEventListener('click', () => {
+      const existingAdvisors = state.serviceAdvisors || { advisors: [], daily: [] };
+      state.monthName = defaultState.monthName;
+      state.reportDate = defaultState.reportDate;
+      state.updatedAt = defaultState.updatedAt;
+      state.workDays = defaultState.workDays;
+      state.remainingDays = defaultState.remainingDays;
+      state.operations = clone(defaultState.operations);
+      state.days = clone(defaultState.days);
+      state.people = clone(defaultState.people);
+      if (defaultState.totals) {
+        state.totals = clone(defaultState.totals);
+      } else {
+        delete state.totals;
+      }
+      if (defaultState.previousMonth) {
+        state.previousMonth = clone(defaultState.previousMonth);
+      } else {
+        delete state.previousMonth;
+      }
+      state.serviceAdvisors = existingAdvisors;
+      state.selectedDayIndex = defaultState.selectedDayIndex;
+      saveState();
+      render();
+      document.getElementById('peopleUploadStatus').textContent = 'Pôvodné dáta dielne boli obnovené.';
+    });
+
+    document.getElementById('spUploadFile').addEventListener('change', event => {
+      const file = event.target.files && event.target.files[0];
+      const preview = document.getElementById('spImagePreview');
+      preview.style.display = 'none';
+      preview.removeAttribute('src');
+      if (file && file.type.startsWith('image/')) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      }
+    });
+
+    document.getElementById('spUploadBtn').addEventListener('click', async () => {
+      const input = document.getElementById('spUploadFile');
+      const status = document.getElementById('spUploadStatus');
+      const file = input.files && input.files[0];
+      if (!file) {
+        status.textContent = 'Vyber najprv Excel, CSV alebo fotku.';
+        return;
+      }
+      status.textContent = 'Nahrávam a čítam dáta SP...';
+
+      if (await redirectToAssistantServerIfAvailable()) {
+        return;
+      }
+
+      try {
+        const body = new FormData();
+        body.append('file', file);
+        const response = await fetch(advisorUploadUrl, { method: 'POST', body });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'Nahratie sa nepodarilo.');
+        }
+        state.serviceAdvisors = result.data || { advisors: [], daily: [] };
+        state.updatedAt = new Date().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        saveState();
+        render();
+        status.textContent = `Načítané: ${state.serviceAdvisors.advisors.length} servisných poradcov zo súboru ${result.filename}.`;
+      } catch (error) {
+        status.textContent = `Nahratie sa nepodarilo: ${error.message}`;
+      }
+    });
+
+    document.getElementById('spClearBtn').addEventListener('click', () => {
+      state.serviceAdvisors = { advisors: [], daily: [] };
+      saveState();
+      render();
+      document.getElementById('spUploadStatus').textContent = 'SP dáta boli vymazané.';
+    });
+
+    function printServiceAdvisorReport() {
+      renderServiceAdvisorPrintReport(serviceAdvisorModel(model()));
+      document.body.classList.add('print-sp-report');
+      window.print();
+    }
+
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('print-sp-report');
+    });
+
+    document.getElementById('spPrintReportBtn').addEventListener('click', printServiceAdvisorReport);
+    document.getElementById('spPrintReportBtnBottom').addEventListener('click', printServiceAdvisorReport);
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      saveState();
+      render();
+    });
+
+    document.getElementById('updateSaveBtn').addEventListener('click', () => {
+      saveState();
+      render();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      state = clone(defaultState);
+      saveState();
+      render();
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>
+
+
